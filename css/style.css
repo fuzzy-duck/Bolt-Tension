@@ -1,0 +1,224 @@
+@font-face {
+    font-family: 'GilroyHeavy';
+    src: url('Gilroy-Heavy.woff2') format('woff2'),
+        url('Gilroy-Heavy.woff') format('woff');
+    font-weight: 900;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'GilroyLight';
+    src: url('Gilroy-Light.woff2') format('woff2'),
+        url('Gilroy-Light.woff') format('woff');
+    font-weight: 300;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'GilroyBold';
+    src: url('Gilroy-Bold.woff2') format('woff2'),
+        url('Gilroy-Bold.woff') format('woff');
+    font-weight: bold;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'GilroyMedium';
+    src: url('Gilroy-Medium.woff2') format('woff2'),
+        url('Gilroy-Medium.woff') format('woff');
+    font-weight: 500;
+    font-style: normal;
+    font-display: swap;
+}
+
+@font-face {
+    font-family: 'Gilroy';
+    src: url('Gilroy-Regular.woff2') format('woff2'),
+        url('Gilroy-Regular.woff') format('woff');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
+
+body {
+    padding: 0;
+    margin: 0;
+    font-family:'GilroyBold', Helvetica, sans-serif;
+    font-size: 0.8em;
+    -moz-user-select: none;
+    -khtml-user-select: none;
+    -webkit-user-select: none;
+}
+
+.webserial {
+    position: fixed;
+    right: 20px;
+    top: 20px;
+    background-color: rgba(255,255,255,0.5);
+    padding: 20px;
+    font-size: 16pt;
+}
+
+.home {
+    width: 1920px;
+    height: 1080px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: url(../img/home.svg);
+}
+.home h1 {
+    color: white;
+    text-transform: uppercase;
+    font-size: 90pt;
+    width: 800px;
+    text-align: center;
+    position: absolute;
+    top: 80px;
+    left: 100px;
+    letter-spacing: 13px;
+    line-height: 1em;
+}
+
+.btn {
+    position: absolute;
+    color: white;
+    background: #6DB6AF;
+    font-size: 35pt;
+    min-width: 300px;
+    text-align: center;
+    border-radius: 20px;
+    padding: 20px 40px;
+}
+
+.play {
+    top: 602px;
+    left: 1105px;
+}
+.home .textbox {
+    position: absolute;
+    width: 480px;
+    height: 420px;
+    top: 172px;
+    left: 1046px;
+    text-align: center;
+    box-sizing: border-box;
+    padding: 40px 20px;
+}
+.home .textbox h2 {
+    padding: 0;
+    margin: 0 0 20px 0;
+    color: #6DB6AF;
+    font-size: 30pt;
+}
+.home .textbox h3 {
+    padding: 0;
+    margin: 0 0 20px 0;
+    font-family: 'GilroyMedium';
+    color: white;
+    font-size: 26pt;
+}
+
+.howtoplay {
+    width: 1920px;
+    height: 1080px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: url(../img/instructions.svg);
+}
+.howtoplay .textbox {
+    color: white;
+    position: absolute;
+    top: 280px;
+    left: 80px;
+    width: 400px;
+}
+.howtoplay .textbox h2 {
+    padding: 0;
+    margin: 0 0 20px 0;
+    color: white;
+    font-size: 40pt;
+    text-transform: uppercase;
+    letter-spacing: 4px;
+    padding-bottom: 30px;
+}
+.howtoplay .textbox h3 {
+    padding: 0;
+    margin: 0 0 20px 0;
+    font-family: 'GilroyMedium';
+    color: white;
+    font-size: 30pt;
+}
+.start {
+    left: 80px;
+    top: 680px;
+}
+.game-base {
+    width: 1920px;
+    height: 1080px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    background: url(../img/instructions.svg);
+}
+
+.bolts {
+    position: absolute;
+    top: 179px;
+    left: 88px;
+    width: 90px;
+}
+
+.bolt {
+    width: 82px;
+    margin: 0 0 15px;
+    height: 74px;
+    background: url(../img/bolt-default.svg);
+}
+.tick {
+    position: absolute;
+    margin-top: 21px;
+    margin-left: 21px;
+    width: 37px;
+    height: 50px;
+    background: url(../img/tick.svg) no-repeat;
+}
+.cross {
+    position: absolute;
+    margin-top: 21px;
+    margin-left: 25px;
+    width: 34px;
+    height: 50px;
+    background: url(../img/cross.svg) no-repeat;
+}
+.active {
+    background: url(../img/bolt-active.svg);
+}
+.normal {
+    background: url(../img/bolt-normal.svg);
+}
+.faulty {
+    background: url(../img/bolt-faulty.svg);
+}
+.disabled {
+    opacity: 0.5;
+    pointer-events: none;
+}
+.ignore {
+    pointer-events: none;
+}
+
+.well-done {
+    width: 1920px;
+    height: 1080px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 99999;
+    background: url(../img/well-done.svg);
+}

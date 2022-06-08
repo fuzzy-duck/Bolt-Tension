@@ -1,0 +1,36 @@
+{
+  "name": "verdant-social",
+  "version": "1.0.0",
+  "description": "Electron app",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "package-mac": "electron-packager . --overwrite --platform=darwin --arch=x64 --icon=assets/icons/mac/icon.icns --prune=true --out=release-builds",
+    "package-win": "electron-packager . verdant-social --overwrite --platform=win32 --arch=ia32 --prune=true --out=release-builds --version-string.CompanyName=CE --version-string.FileDescription=CE --version-string.ProductName=\"Electron demo\"",
+    "package-linux": "electron-packager . verdant-social --overwrite --asar=true --platform=linux --arch=x64 --icon=assets/icons/png/1024x1024.png --prune=true --out=release-builds"
+  },
+  "repository": "https://github.com/electron/electron-quick-start",
+  "keywords": [
+    "Electron",
+    "quick",
+    "start",
+    "tutorial",
+    "demo"
+  ],
+  "author": "GitHub",
+  "license": "CC0-1.0",
+  "devDependencies": {
+    "electron": "^13.1.8",
+    "electron-packager": "^15.3.0"
+  },
+  "dependencies": {
+    "bootstrap": "^5.1.0",
+    "dgram": "^1.0.1",
+    "ejs": "^2.6.1",
+    "express": "^4.17.1",
+    "jquery": "^3.6.0",
+    "jquery-idletimer": "^1.0.0",
+    "node-udp-forwarder": "^0.1.0",
+    "open": "^8.2.1"
+  }
+}
