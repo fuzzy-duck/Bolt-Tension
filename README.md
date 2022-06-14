@@ -32,7 +32,7 @@ Arduino using serial protocol to communicate with PC
 | U 1\n          	| PC     	| -   	| -      	| -   	| Set all LEDs to the unselected state.                                                                                                                                                                                                     	|
 
 ### Stack
-Installation ⟷ Electronics ⟷ Arduino ⟷ WebSerial ⟷ Express ⟷ Node
+Human ⟷ Musuem Installation ⟷ Electronics ⟷ Arduino ⟷ WebSerial ⟷ Browser ⟷ Express ⟷ Node ⟷ WebSockets ⟷ Browsers
 
 
 
@@ -45,4 +45,8 @@ nom run start
 
 then open your browser :
 
+GAME
 [localhost:3000/index.html](http://localhost:3000/index.html)
+
+API (realtime state snapshot - refresh to see it change)
+[localhost:3000/snapshot](http://localhost:3000/snapshot
