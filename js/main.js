@@ -1,3 +1,49 @@
+/*
+
+import BoltManager, {
+  EVENT_BOLT_SELECTED,
+  LED_STATE_FLASHING,
+  LED_STATE_WHITE,
+  LED_STATE_GREEN,
+  LED_STATE_RED,
+  LED_STATE_OFF
+} from './BoltManager.js'
+
+
+const arduino = new BoltManager()
+
+// connect to the arduino
+// NB  This *must* be triggered by a user interaction...
+await arduino.connect()
+
+// tell the arduino to do stuff...
+await arduino.illuminateLED(0, LED_STATE_FLASHING)
+await arduino.illuminateLED(1, LED_STATE_WHITE)
+await arduino.illuminateLED(2, LED_STATE_FLASHING)
+await arduino.illuminateLED(3, LED_STATE_WHITE)
+await arduino.illuminateLED(4, LED_STATE_GREEN)
+await arduino.illuminateLED(5, LED_STATE_RED)
+await arduino.illuminateLED(6, LED_STATE_OFF)
+await arduino.illuminateLED(7, LED_STATE_OFF)
+
+arduino.getLEDStatus(0) // LED_STATE_FLASHING
+
+// turn all LEDs off
+await arduino.resetLEDs()
+
+// turn all LEDs into blinking lights to attract
+// passers by the engage (kinda like a screensaver)
+await arduino.setAttractMode()
+
+arduino.on(EVENT_BOLT_SELECTED, boltIndex => {
+  // user has selected a bolt!
+  // boltIndex or arduino.getActiveBolt() at any time
+  const boltUserIsEngagedWith = arduino.getActiveBolt()
+  // do something with that knowledge
+})
+
+*/
+
 
 
 var bolt01 = false;
