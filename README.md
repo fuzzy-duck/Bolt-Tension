@@ -32,7 +32,7 @@ Arduino using serial protocol to communicate with PC
 | U 1\n          	| PC     	| -   	| -      	| -   	| Set all LEDs to the unselected state.                                                                                                                                                                                                     	|
 
 ### Stack
-Installation ⟶ Electronics ⟶ Arduino ⟷ WebSerial ⟷ Express ⟷ Node
+Installation ⟷ Electronics ⟷ Arduino ⟷ WebSerial ⟷ Express ⟷ Node
 
 
 
