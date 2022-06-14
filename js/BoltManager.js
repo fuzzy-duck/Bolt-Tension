@@ -78,11 +78,19 @@ export default class BoltManager extends EventManager {
         {
             return true
         }
+
         this.connecting = true
-        const result = await this.serialController.init()
+        
+        let result 
+        try{
+           result = await this.serialController.init()
+        }catch(error){
+            return false
+        }
+
         if (debug)
         {
-            console.warn("Connected to Serial Gadget", result)
+            console.warn("Connected to Serial Port", result)
         }
         
         this.connecting = false
@@ -143,13 +151,7 @@ export default class BoltManager extends EventManager {
     parseCommand( command ){
 
         const commands = command.split(" ") 
-        // // ensure it is valid or return failure
-        // if (commands.length < 2)
-        // {
-        //     // failure in comms
-        //     return null
-        // }
-
+      
         // grab first part
         const commandType = String(commands.shift()).toUpperCase()
 
@@ -166,7 +168,7 @@ export default class BoltManager extends EventManager {
                 break
 
             default:
-                console.error("Malformed arduino command:", command)
+                console.warn("Malformed arduino command:", command)
                 return null
         }
         // ensure it is valid or return failure
@@ -203,7 +205,7 @@ export default class BoltManager extends EventManager {
      */
     createSnapshot(){
         return {
-            leds:this.leds.map( (e,index) => this.isSwitchAtPositionOn(index) ),
+            leds:this.leds.map( (e,index) => e ),
             bolt:this.bolt
         }
     }
@@ -218,30 +220,41 @@ export default class BoltManager extends EventManager {
      * 4 is for off/black (just incase this is ever needed).
      */
     async illuminateLED( index=0, state=1 ){
-        // TODO: ensure state is within bounds...
-        return this.sendData(`L ${index} ${state}\n`)
+        if (state >= 0 && state <= 4)
+        {
+            return this.sendData(`L ${index} ${state}`)
+        }
+        return null
     }
 
     /**
      * Reset all LEDs into attractor state
+     * Serial Command R 1\n
      */
     async setAttractMode(){
-        // R 1\n
-        this.bolt = -1
-        return this.sendData("U 1\n")
+        return this.sendData("R 1")
     }
 
     /**
      * Set all LEDs to the unselected state.
+     * Serial Command U 1\n
      */
     async resetLEDs(){
-        // U 1\n
-        this.bolt = -1
-        return this.sendData("U 1\n")
+        return this.sendData("U 1")
     }
 
+    /**
+     * Send any data to the Serial Bus and Arduino
+     * @param {String} requestedCommand - data packet to send
+     * @returns 
+     */
     async sendData(requestedCommand){
-        return this.serialController.write(requestedCommand)
+        try{
+            return this.serialController.write(`${requestedCommand}\n`)
+        }catch(error){
+            console.error(error)
+            return null
+        }
     }
 
     /**
@@ -252,7 +265,7 @@ export default class BoltManager extends EventManager {
      */
     async fetchData( requestedCommand, callback ){
 
-        await this.serialController.write(requestedCommand)
+        await this.sendData(requestedCommand)
        
         // returns a long string of data but it may be cut off
         const data = await this.serialController.readCommands( (commandData)=>{
