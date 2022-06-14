@@ -31,7 +31,7 @@ class LineBreakTransformer {
  * https://wicg.github.io/serial
  * 
  */
-export class SerialController {
+export default class SerialController {
     
     constructor() {
         this.encoder = new TextEncoder();
@@ -101,6 +101,9 @@ export class SerialController {
     }
 
     async write(data) {
+        if (!this.writer){
+            throw Error("You must init() the SerialController before use")
+        }
         const dataArrayBuffer = this.encoder.encode(data);
         return await this.writer.write(dataArrayBuffer);
     }
