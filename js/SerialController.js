@@ -23,6 +23,7 @@ class LineBreakTransformer {
         controller.enqueue(this.chunks);
     }
 }
+
 /**
  * debug:
  * about://device-log
@@ -33,10 +34,12 @@ class LineBreakTransformer {
  */
 export default class SerialController {
     
+    isWriting = false
+
     constructor() {
-        this.encoder = new TextEncoder();
-        this.decoder = new TextDecoder();
-        this.textDecoder = new TextDecoderStream();
+        this.encoder = new TextEncoder()
+        this.decoder = new TextDecoder()
+        this.textDecoder = new TextDecoderStream()
     } 
   
     async init() {
@@ -67,18 +70,18 @@ export default class SerialController {
                  
                 //const [appPort, devPort] = port.readable.tee();
                 const signals = await port.getSignals();        
-                const readableStreamClosed = port.readable.pipeTo(this.textDecoder.writable);
+                const readableStreamClosed = port.readable.pipeTo(this.textDecoder.writable)
                 this.reader = this.textDecoder.readable
                                 .pipeThrough(new TransformStream(new LineBreakTransformer()))
-                                .getReader();
-                //this.reader = port.readable.getReader();
+                                .getReader()
+                //this.reader = port.readable.getReader()
 
-                this.writer = port.writable.getWriter();
+                this.writer = port.writable.getWriter()
                 this.port = port
 
                 // these are useful to connect to if multiple devices are connected
                 // as you can target them directly by id on refresh :)
-                const { usbProductId, usbVendorId } = port.getInfo();
+                const { usbProductId, usbVendorId } = port.getInfo()
                 // console.log( { usbProductId, usbVendorId, signals} );
                 return {
                     connected:true,
@@ -87,36 +90,38 @@ export default class SerialController {
                 }
             }
             catch (err) {
-                console.error('There was an error opening the serial port:', err);
-                throw Error(err);
+                throw Error('There was an error opening the serial port:'+ err)
             }
         }
         else {
-            console.error('Web serial doesn\'t seem to be enabled in your browser. Try enabling it by visiting:');
-            console.error('chrome://flags/#enable-experimental-web-platform-features');
-            console.error('opera://flags/#enable-experimental-web-platform-features');
-            console.error('edge://flags/#enable-experimental-web-platform-features');
+            console.error('Web serial doesn\'t seem to be enabled in your browser. Try enabling it by visiting:')
+            console.error('chrome://flags/#enable-experimental-web-platform-features')
+            console.error('opera://flags/#enable-experimental-web-platform-features')
+            console.error('edge://flags/#enable-experimental-web-platform-features')
             throw Error('Web serial doesn\'t seem to be enabled in your browser')
         }
     }
 
     async write(data) {
         if (!this.writer){
-            throw Error("You must init() the SerialController before use")
+            throw Error("You must  init() the SerialController before use")
         }
-        const dataArrayBuffer = this.encoder.encode(data);
-        return await this.writer.write(dataArrayBuffer);
+        this.isWriting = true
+        const dataArrayBuffer = this.encoder.encode(data)
+        const output = await this.writer.write(dataArrayBuffer)
+        this.isWriting = false
+        return output
     }
 
     async readByte(){
         try {
-            const readerData = await this.reader.read();
-            return this.decoder.decode(readerData.value);
+            const readerData = await this.reader.read()
+            return this.decoder.decode(readerData.value)
         }
         catch (err) {
-            const errorMessage = `error reading data: ${err}`;
-            console.error(errorMessage);
-            return errorMessage;
+            const errorMessage = `error reading data: ${err}`
+            console.error(errorMessage)
+            return errorMessage
         }
     }
 
@@ -128,7 +133,7 @@ export default class SerialController {
     async readCommands( callback ) {
         const commands = [];
 
-        console.log("SerialController.readCommands(). Port readable?", this.port.readable );
+        console.log("SerialController.readCommands(). Port readable?", this.port.readable )
    
         // pause the whole operation until the port is readable
         while ( this.port.readable ) {
@@ -139,20 +144,20 @@ export default class SerialController {
                 // the the next byte will be the last byte of the data and it will be "done"
                 while (true) {
 
-                    const { value, done } = await this.reader.read();
+                    const { value, done } = await this.reader.read()
                     
                     if (done) {
                         // console.error("SERIAL DONE");
                         // Allow the serial port to be closed later.
-                        this.reader.releaseLock();
+                        this.reader.releaseLock()
                         // exit these loops
-                        break;
+                        break
                     }
 
                     // concantenate the data into one longer string
                     if (value) 
                     {
-                        commands.push( value );
+                        commands.push( value )
                  
                         // send only last packet
                         callback && callback(value)
@@ -161,13 +166,13 @@ export default class SerialController {
 
             } catch (error) {
                 // Handle non-fatal read error.  
-                const errorMessage = `error reading data: ${error}`;
-                console.error(errorMessage);
+                const errorMessage = `error reading data: ${error}`
+                console.error(errorMessage)
                 // if you want to catch the error higher up with try catch...
                 // but this may not be what you want as the error will not prevent
                 // the loop repeating
                 // throw Error(error);
-                return errorMessage;
+                return errorMessage
             }
         }
 
