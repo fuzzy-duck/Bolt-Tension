@@ -40,7 +40,7 @@ Human ⟷ Musuem Installation ⟷ Electronics ⟷ Arduino ⟷ WebSerial ⟷ Brow
 
 ```
 npm install
-nom run start
+npm run start
 ```
 
 then open your browser :
