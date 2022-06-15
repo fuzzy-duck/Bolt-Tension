@@ -16,6 +16,30 @@ At this point the user is instructed to hold the NDT transducer to each bolt in 
 
 When all of the bolt heads have been tested, the system reveals the correct answers by extinguishing all of the lights, any bolts marked as damaged will turn to green & flash, if a bolt was identified incorrectly, the red light will flash along with a green light around the actual correct answer.
 
+## Interactions Sequence
+- User touches attractor screen
+
+- 1 of 8 bolts are randomised on the physical and front end layout : 3 bolts are faulty, 5 are normal (can this be randomised?)
+
+- The user uses the handheld device on said bolt and a video plays on the front end (possible 4 faulty videos 8 normal video)
+
+- The user decides if it is faulty or normal by pressing the front end buttons
+
+- This correct or incorrect score (x or tick) is registered but only revealed by pressing the check button
+    
+- After pressing faulty or normal another bolt is randomised and the process continues
+
+- However, once a bolt has been activated the user can return to it and reactivate it using the handheld device and change their answer....if it's incorrect (by pressing faulty or normal)
+    
+- Presumably once the user returns the handheld device to a bolt their answer is reset on the front-end?
+
+- Once all answers are correct a signal is sent via websockets to the reward screen which marks it as complete
+
+- Once all is complete a ten minute timer starts, giving the user enough time to complete the Moving parts exhibit and then resets (see below)
+
+- If there is no user interaction through the AV for 5 minutes the exhibit resets
+
+
 
 ## Hardware
 
@@ -32,21 +56,31 @@ Arduino using serial protocol to communicate with PC
 | U 1\n          	| PC     	| -   	| -      	| -   	| Set all LEDs to the unselected state.                                                                                                                                                                                                     	|
 
 ### Stack
-Human ⟷ Musuem Installation ⟷ Electronics ⟷ Arduino ⟷ WebSerial ⟷ Browser ⟷ Express ⟷ Node ⟷ WebSockets ⟷ Browsers
+Human ⟷ Musuem Installation ⟷ Electronics ⟷ Arduino ⟷ WebSerial ⟷ Browser ⟷ Express (Server) ⟷ Node ⟷ WebSockets ⟷ Browsers
 
 
 
 ### Installation & running
 
+NB. This software _requires_ nodeJS to run
+
+1. Please intall [NodeJS]()
+2. Download this package and open it as your current directory
+```eg. cd Bolt-Tension```
+3. 
 ```
 npm install
-nom run start
+npm run start
 ```
-
-then open your browser :
+4. Open your browser at one of the following pages:
 
 GAME
 [localhost:3000/index.html](http://localhost:3000/index.html)
+SCOREBOARD
+[localhost:3000/scores.html](http://localhost:3000/scores.html)
 
-API (realtime state snapshot - refresh to see it change)
+API (realtime ARDUINO state snapshot - refresh to see it change)
 [localhost:3000/snapshot](http://localhost:3000/snapshot
+
+API (realtime GAME state snapshot - refresh to see it change)
+[localhost:3000/snapshot](http://localhost:3000/game
