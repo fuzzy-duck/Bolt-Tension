@@ -12,6 +12,11 @@ let apiState = {
     leds: new Array(8).fill(-1)
 }
 
+let gameState = {
+    bolt:-1,
+    leds: new Array(8).fill(-1)
+}
+
 export const startServer = (serverPort = 3000, websocketServerPort = 8080) => {
 
     //initialize the Static & WebSocket server instance
@@ -58,7 +63,7 @@ export const startServer = (serverPort = 3000, websocketServerPort = 8080) => {
         //console.log("Data being passed in from arduino")
         res.send('Serial Comms API')
     })
-
+  
     // example: http://localhost:3000/state
     app.get('/snapshot', function(req, res, next){
         res.header("Content-Type",'application/json')
@@ -79,14 +84,42 @@ export const startServer = (serverPort = 3000, websocketServerPort = 8080) => {
         else next()
     })
 
-    // example: http://localhost:3000/snapshot/json/?data=data
+      
+    app.get('/game/', (req, res) => {
+        //console.log("Data being passed in from arduino")
+        res.header("Content-Type",'application/json')
+        res.end(JSON.stringify(gameState, null, 3))
+    })
+
+    // example: http://localhost:3000/game/
+    app.post('/game/', function(req, res, next){
+
+        const snapshot = req.body // || req.params.snapshot
+        const json = JSON.stringify(snapshot, null, 3)
+        gameState = snapshot
+        console.log("GAME Data being passed in from arduino", json)
+
+        // send out to connected clients
+        sendToAllClients("game:"+json, false)
+
+        if (snapshot)
+        {
+            res.header("Content-Type",'application/json')
+            res.end(json)
+        } else { 
+            next()
+        }
+    })
+
+
+
     app.post('/snapshot/', function(req, res, next){
         // res.json()
         const snapshot = req.body // || req.params.snapshot
         const json = JSON.stringify(snapshot, null, 3)
         apiState = snapshot
 
-        console.log("Data being passed in from arduino", json)
+        console.log("ARDUINO Data being passed in from arduino", json)
 
         // send out to connected clients
         sendToAllClients("snapshot:"+json, false)
