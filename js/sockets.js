@@ -2,7 +2,7 @@ import EventManager from './EventManager.js'
 
 export const EVENT_DATA_RECEIVED = "data-received"
 
-export default class Socket  extends EventManager {
+export default class Socket extends EventManager {
 
     constructor(address = "ws://localhost:3000" || "wss://localhost:3000")
     {
@@ -13,15 +13,16 @@ export default class Socket  extends EventManager {
         // really all this should do is announce itself!
         // socket.send("I am the client, please tell me about the bolts")
         this.socket.onopen = event => {
+            console.log("[init] Main Client Created")
             console.log("[open] Connection established")
             console.log("Sending to server", event)
-            this.send("I am the client, please tell me about the bolts!")
-            this.send("connected:device")
+            this.send("Main Client Created")
+            // this.send("connected:device")
         }
         
         this.socket.onmessage = event => {
             // update stuff
-            console.log(`[message] Data received from server: ${event.data}`, event )
+            console.log(`[message] Data received: ${event.data}`, event )
 
             // update the state of the app...
             this.dispatch(EVENT_DATA_RECEIVED, event.data)
