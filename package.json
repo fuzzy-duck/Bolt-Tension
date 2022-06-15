@@ -1,5 +1,6 @@
 {
   "name": "bolt-tension",
+  "productName": "bolt",
   "version": "0.0.0",
   "description": "A setwork representation of the root of a wind turbine blade depicting the bolts holding it to the blade hub",
   "main": "index.js",
@@ -18,5 +19,8 @@
     "node-udp-forwarder": "^0.1.0",
     "save": "^2.5.0",
     "ws": "^8.8.0"
+  },
+  "devDependencies": {
+    "electron-packager": "^15.5.1"
   }
 }
