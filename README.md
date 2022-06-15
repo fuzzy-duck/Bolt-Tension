@@ -82,5 +82,6 @@ SCOREBOARD
 API (realtime ARDUINO state snapshot - refresh to see it change)
 [localhost:3000/snapshot](http://localhost:3000/snapshot
 
+
 API (realtime GAME state snapshot - refresh to see it change)
-[localhost:3000/snapshot](http://localhost:3000/game
+[localhost:3000/game](http://localhost:3000/game
