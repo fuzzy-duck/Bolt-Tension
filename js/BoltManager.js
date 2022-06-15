@@ -22,7 +22,19 @@ export default class BoltManager extends EventManager {
 
     // BOLTS = x8 switches (on / off)
     // the system sends out this event when the bolt has been selected
-    bolt = -1
+    arduinoBoltSelected = -1
+
+    internalRandomBolt = Math.ceil(Math.random() * 8)
+
+   
+    howManyBoltsActivated = 0
+
+     // when this hits 8 we go into mode 2
+    howManyBoltsAreNotFaulty = 0
+
+    // game Mode 2
+
+
 
     // LEDS = x8 lights (on / off)
     leds
@@ -44,18 +56,19 @@ export default class BoltManager extends EventManager {
      * @param {number} index - integer position of the switch
      * @returns Boolean value of is the switch on
      */
-     getLEDStatus( index=0 ){
+    getLEDStatus( index=0 ){
         // if unknown we return the default state
         return this.leds[index] || LED_STATE_UNKNOWN
     }
+
     /**
      * get the bolt that the user is currently engaging with
      * @param {number} index - integer position of the switch
      * @returns Boolean value of is the switch on
      */
-     getActiveBolt(){
+    getActiveBolt(){
         // if unknown we return the default state
-        return this.bolt
+        return this.arduinoBoltSelected
     }
 
     /**
@@ -160,9 +173,9 @@ export default class BoltManager extends EventManager {
             // Set the ACTIVE BOLT
             case 'B':
                 const newBoltValue = parseInt( commands[0] )
-                if ( newBoltValue !== this.bolt )
+                if ( newBoltValue !== this.arduinoBoltSelected )
                 {
-                    this.bolt = newBoltValue
+                    this.arduinoBoltSelected = newBoltValue
                     this.dispatch( EVENT_BOLT_SELECTED, newBoltValue )
                 }
                 break
@@ -195,7 +208,7 @@ export default class BoltManager extends EventManager {
      */
     loadSnapshot( dataObject ){
         this.leds = [...dataObject.leds],
-        this.bolt = dataObject.bolt
+        this.arduinoBoltSelected = dataObject.bolt
     }
 
     /**
@@ -206,7 +219,7 @@ export default class BoltManager extends EventManager {
     createSnapshot(){
         return {
             leds:this.leds.map( (e,index) => e ),
-            bolt:this.bolt
+            bolt:this.arduinoBoltSelected
         }
     }
 
@@ -240,6 +253,7 @@ export default class BoltManager extends EventManager {
      * Serial Command U 1\n
      */
     async resetLEDs(){
+        // FIXME: also reset the logic states of the game
         return this.sendData("U 1")
     }
 
@@ -284,7 +298,7 @@ export default class BoltManager extends EventManager {
      */
     toString(){
         let output = "BOLT : Arduino Status ______________________________ \n"
-        output += "Active Bolt: " + this.bolt + "\n"
+        output += "Active Bolt: " + this.arduinoBoltSelected + "\n"
         output += "LEDS:        " + this.leds.map( b => b ? "LIT" : "UNLIT" ).join(", ") + "\n"
         return output
     }
