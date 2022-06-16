@@ -64,24 +64,28 @@ Human ⟷ Musuem Installation ⟷ Electronics ⟷ Arduino ⟷ WebSerial ⟷ Brow
 
 NB. This software _requires_ nodeJS to run
 
-1. Please intall [NodeJS]()
-2. Download this package and open it as your current directory
-```eg. cd Bolt-Tension```
-3. 
+1. Please intall [NodeJS](https://nodejs.org/en/)
+2. Download this package and open a command prompt
+3. Open your project folder as your current directory
+```eg. cd ./Bolt-Tension```
+3. Run the following commands and wait a while
 ```
 npm install
-npm run start
 ```
-4. Open your browser at one of the following pages:
+4. To see the app and start the server run
+```npm run start```
+5. Open your browser at one of the following pages:
 
 GAME
 [localhost:3000/index.html](http://localhost:3000/index.html)
-SCOREBOARD
-[localhost:3000/scores.html](http://localhost:3000/scores.html)
 
-API (realtime ARDUINO state snapshot - refresh to see it change)
+API (ARDUINO state snapshot - refresh to see it change)
 [localhost:3000/snapshot](http://localhost:3000/snapshot
-
 
 API (realtime GAME state snapshot - refresh to see it change)
 [localhost:3000/game](http://localhost:3000/game
+
+
+// TODO: 
+SCOREBOARD
+[localhost:3000/scores.html](http://localhost:3000/scores.html)
