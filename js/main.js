@@ -55,6 +55,8 @@ const showHomePage = ( useClick=true ) =>{
 const resetGame = async (quick=false) => {
   console.log("Resetting Game")
 
+  await game.showAttractMode()
+
   score = 0
 
   // we clear interval in case one was queued up before
@@ -83,7 +85,7 @@ const resetGame = async (quick=false) => {
 /**
  * Wait for a user to press either Faulty or Normal
  */
-const waitForUserChoice = async( timeAllowance=8000 ) => new Promise( (resolve,reject)=>{
+const waitForUserChoice = async( timeAllowance=12000 ) => new Promise( (resolve,reject)=>{
   
   console.log("Waiting for user to select faulty or normal")
   

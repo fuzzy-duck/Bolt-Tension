@@ -237,6 +237,7 @@ export default class BoltGame extends EventManager {
         this.playing = true
         this.timeStarted = Date.now()
         sendGameStateToServer(this.gameState)
+        this.turnOffAllLEDs()
     }
 
     /**
@@ -346,9 +347,8 @@ export default class BoltGame extends EventManager {
         return await this.arduino.setAttractMode()
     }
 
-    async showEndScreen () {
-        // turn all LEDs off
-        return await this.arduino.resetLEDs()
+    async turnOffAllLEDs () {
+       return await this.arduino.resetLEDs()
     }
 
     onGameOver(){
