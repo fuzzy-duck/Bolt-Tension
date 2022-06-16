@@ -104,7 +104,8 @@ export default class SerialController {
 
     async write(data) {
         if (!this.writer){
-            throw Error("You must  init() the SerialController before use")
+            return
+            //throw Error("The SerialController is not available")
         }
         this.isWriting = true
         const dataArrayBuffer = this.encoder.encode(data)

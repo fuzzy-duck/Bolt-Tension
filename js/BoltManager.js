@@ -266,7 +266,7 @@ export default class BoltManager extends EventManager {
         try{
             return this.serialController.write(`${requestedCommand}\n`)
         }catch(error){
-            console.error(error)
+            console.warn(error)
             return null
         }
     }

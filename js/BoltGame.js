@@ -30,6 +30,8 @@ const convertLEDStatus = status => {
 }
 
 export const EVENT_BOLT_ACTIVATED = "bolt-selected-by-arduino"
+export const EVENT_ALL_BOLTS_COMPLETED = "bolt-all-selected-by-human"
+export const EVENT_GAME_COMPLETED = "bolt-all-correct"
 
 // to send data from here back to the server..
 const sendDataToServer = async ( path='serial', options={} ) => {
@@ -60,7 +62,7 @@ const sendArduinoStateToServer = () => {
     sendJSONToServer( "snapshot", JSON.stringify(arduino.createSnapshot()) )
 }
 
-const sendGameStateToServer = () => {
+const sendGameStateToServer = (gameState) => {
     sendJSONToServer( "snapshot", JSON.stringify(gameState) )
 }
 
@@ -68,6 +70,7 @@ const sendGameStateToServer = () => {
 export default class BoltGame extends EventManager {
 
     initialised = false
+    playing = false
     activeBolt = -1
     
     socket
@@ -147,6 +150,24 @@ export default class BoltGame extends EventManager {
         return unknown ? unknown[Math.floor(Math.random() * unknown.length)] : -1
     }
 
+    getCorrectAnswers(){
+        return this.gameState.faultyBoltChoices.map( (bolt, index) => {
+            return bolt === this.isUserChoiceFaulty(index)
+        } )
+    }
+
+    areAllAnswersCorrect(){
+        for (let index=0, l=this.boltQuantity; index<l; ++index)
+        {
+            const answer = this.isBoltFaulty(index)
+            const choice = this.isUserChoiceFaulty(index)
+            if (answer !== choice){
+                return false
+            }
+        }
+        return true
+    }
+
     /**
      * 
      * @param {*} boltIndex 
@@ -177,9 +198,16 @@ export default class BoltGame extends EventManager {
      * Start the game!
      */
     startGame(){
-        sendGameStateToServer()
+        this.playing = true
+        sendGameStateToServer(this.gameState)
     }
 
+    /**
+     * Save the answer / choice that the user made into memory and store
+     * @param {Number} boltIndex 
+     * @param {Boolean} isFaulty 
+     * @returns 
+     */
     async setUserAnswer( boltIndex, isFaulty ){
 
         const choices = this.gameState.faultyBoltChoices
@@ -224,7 +252,16 @@ export default class BoltGame extends EventManager {
            
         if (hasUserCompleted)
         {
-            console.log("User Completed all Bolts!", {choices}  )
+            if (this.areAllAnswersCorrect())
+            {
+                console.log("User Completed all Bolts Correctly!", {choices} )
+                this.onGameOver()
+            }else{
+                console.warn("User answered some incorrectly", {choices} )
+                // TODO: Show answers?
+                this.dispatch(EVENT_ALL_BOLTS_COMPLETED)
+            }
+
         }else{
             // user still working on it...
         }
@@ -240,9 +277,15 @@ export default class BoltGame extends EventManager {
      * @param {Boolean} random - should the data be randomised?
      */
     createGameState (random=true) {
+        const faultyBoltChoices = []
+        const actuallyFaultyBolts = []
+        for (let i=0, l=this.boltQuantity; i<l; ++i)
+        {
+            faultyBoltChoices[i] = undefined
+            actuallyFaultyBolts[i] = random ? Math.random() < 0.5 ? true : false : false
+        }
         return {
-            faultyBoltChoices: new Array(this.boltQuantity).fill( undefined ),
-            actuallyFaultyBolts: new Array(this.boltQuantity).fill( random ? Math.random() < 0.5 ? true : false : false )
+            faultyBoltChoices, actuallyFaultyBolts
         }
     }
 
@@ -277,6 +320,11 @@ export default class BoltGame extends EventManager {
         this.gameState = this.createGameState()
         // turn all LEDs off
         return await this.arduino.resetLEDs()
+    }
+
+    onGameOver(){
+        this.playing = false
+        this.dispatch(EVENT_GAME_COMPLETED)
     }
 }
 
