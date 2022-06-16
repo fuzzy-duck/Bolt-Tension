@@ -13,6 +13,8 @@ let userChoiceInterval = -1
 let controller = new AbortController()
 const game = new BoltGame()
 
+const $play = $(".play")
+
 // FIXME: Not very performant way of handling this...
 const showResults = () => document.querySelectorAll(".result").forEach( bolt => bolt.removeAttribute("hidden"))
 const hideResults = () => document.querySelectorAll(".result").forEach( bolt => bolt.setAttribute("hidden", true))
@@ -20,32 +22,33 @@ const hideResults = () => document.querySelectorAll(".result").forEach( bolt => 
 const hideHomePage = () =>{ 
   console.log("Hiding Welcome Screen")
   $('.home').attr("hidden",true)
-  $(".play").fadeOut()
-  $(".play").unbind("click")
-  $(".start").unbind("click")
+  $play.fadeOut()
+  $play.unbind("click")
+  // $(".start").unbind("click")
 }
 
 const showHomePage = ( useClick=true ) =>{ 
   console.log("Showing Welcome Screen")
     
   $('.home').removeAttr("hidden")
-  $(".play").delay(1000).fadeIn()
+
+
+  $play.delay(1000).fadeIn()
   if (useClick)
   {
-    $(".play").on("click", function () {
+    $play.on("click", function () {
 
       console.log("Play has been pressed by the user on screen")
-      $(".howtoplay").fadeIn()
 
-      $(".start").on("click", function () {
-        console.log("Start has been pressed by the user on screen")
-        $(".game-base").fadeIn()
-      })
+      $(".howtoplay").removeAttr("hidden").fadeIn()
+      $(".game-base").removeAttr("hidden").fadeIn()
 
-      $(".start").delay(2000).fadeIn()
+      startGame()
 
-      // start the game!
-      start()
+      // $(".start").on("click", function () {
+      //   // start the game!
+      //   console.log("Start has been pressed by the user on screen")
+      // }).delay(2000).fadeIn()
     })
   }
 }
@@ -144,7 +147,7 @@ const activateBolt = async ( boltIndex ) => {
 
   if (waiting){
     // hmm we are trying to activate a bolt while one is still activating...
-    console.low("A different Bolt was selected by the user before a decision was made")
+    console.log("A different Bolt was selected by the user before a decision was made")
   }
 
   waiting = true
@@ -223,7 +226,6 @@ const activateBolt = async ( boltIndex ) => {
     }else{
       
       console.log("Game complete?", game )
-
     }
 
   }catch(error){
@@ -253,14 +255,12 @@ const pickRandomBolt = async () => {
   return await activateBolt( Math.round(Math.random() * 8) )
 }
 
-const start = async () => {
+const startGame = async () => {
 
-  console.log("Attempting to connect to Arduino...")
-  console.log("Accept the prompt if requested please!")
-
-  // game play :
   if (connected)
   {
+    console.log("Start game")
+  
     // start the game with randomised settings
     game.startGame()
     
@@ -279,7 +279,9 @@ const start = async () => {
     // TODO: If there is no user interaction through the AV for 5 minutes the exhibit resets
 
   }else{
-    
+    console.log("Attempting to connect to Arduino...")
+    console.log("Accept the prompt if requested please!")
+  
     connected = await game.initialise()
   }
 
@@ -353,7 +355,7 @@ window.addEventListener('keydown', event => {
 
 // Game Begins
 // This is used to allow the Serial Controller
-document.documentElement.addEventListener( "click", start, { once: true } )
+document.documentElement.addEventListener( "click", startGame, { once: true } )
 
 resetGame( true )
 showHomePage( false )
