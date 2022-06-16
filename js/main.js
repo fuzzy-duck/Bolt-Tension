@@ -9,6 +9,8 @@ let automaticallyShowFirstBolt = true
 
 const TIME_BETWEEN_BOLTS = 800
 
+let userChoiceInterval = -1
+let controller = new AbortController()
 const game = new BoltGame()
 
 // FIXME: Not very performant way of handling this...
@@ -87,14 +89,16 @@ const resetGame = async (quick=false) => {
   return true
 }
 
-let userChoiceInterval = -1
-
 
 /**
  * Wait for a user to press either Faulty or Normal
  */
-const waitForUserChoice = async( timeAllowance=( 1 * 60 * 1000 )) => new Promise( (resolve,reject)=>{
+const waitForUserChoice = async( signal, timeAllowance=( 1 * 60 * 1000 )) => new Promise( (resolve,reject)=>{
   
+  if (signal.aborted) {
+		reject(new DOMException('Aborted', 'AbortError'))
+	}
+
   console.log("Waiting for user to select faulty or normal")
   
   userChoiceInterval = setTimeout(()=>{
@@ -107,7 +111,6 @@ const waitForUserChoice = async( timeAllowance=( 1 * 60 * 1000 )) => new Promise
     $(".btn-faulty").unbind("click")
     clearInterval(userChoiceInterval)
     console.log("User selected faulty:"+isFaulty)
-    
     resolve(isFaulty)
   }
 
@@ -118,15 +121,34 @@ const waitForUserChoice = async( timeAllowance=( 1 * 60 * 1000 )) => new Promise
   $(".btn-faulty").on("click", function () {
     end(true)
   })
+
+  signal.addEventListener('abort', () => {
+    reject(new DOMException('Aborted', 'AbortError'))
+  })
 })
  
+
+let waiting = false
 const activateBolt = async ( boltIndex ) => {
+
+  // kill any previous promises!
+  controller.abort()
+
+  // create new signal
+  controller = new AbortController()
 
   if (!game.playing){
     console.warn("Bolt Changed even though Game has not started and is locked")
     return
   }
-  
+
+  if (waiting){
+    // hmm we are trying to activate a bolt while one is still activating...
+    console.low("A different Bolt was selected by the user before a decision was made")
+  }
+
+  waiting = true
+
   // show activity
   clearInterval(userChoiceInterval)
 
@@ -172,7 +194,8 @@ const activateBolt = async ( boltIndex ) => {
   // revealed by pressing the check button
   try{
 
-    const userThinksItIsFaulty = await waitForUserChoice()
+    // this needs to be cancellable
+    const userThinksItIsFaulty = await waitForUserChoice( controller.signal )
     
     // now check the answer is correct
     const wasUserCorrect = await game.setUserAnswer(boltIndex, userThinksItIsFaulty)
@@ -205,10 +228,17 @@ const activateBolt = async ( boltIndex ) => {
 
   }catch(error){
 
-    console.error(error)
-    // timeout!
-    endGame()
+    if (error.name && error.name === "AbortError")
+    {
+      // ignore this event - just means the previous promise was cancelled
+      // and we don't want to use the status of it anywhere as we consider it
+      // out of date
+    }else{
+      // timeout
+      endGame()
+    }
   }
+  waiting = false
 }
 
 
@@ -216,20 +246,6 @@ const activateBolt = async ( boltIndex ) => {
 const endGame = async () => {
   console.log("Ending game prematureely")
   await resetGame()
-}
-
-const onTimeOut = async () => {
-  console.log("Ten minute timeout of inactivity - resettting...")
-  //endGame()
-}
-
-const restartTimeout = () => {
-  if (game.playing)
-  {
-    // don't allow automation if game not playing
-    clearInterval(timeOutInterval)
-    timeOutInterval = setTimeout( onTimeOut, 1000 * 60 * 2 )
-  }
 }
 
 const pickRandomBolt = async () => {
@@ -241,9 +257,6 @@ const start = async () => {
 
   console.log("Attempting to connect to Arduino...")
   console.log("Accept the prompt if requested please!")
-
-  // we only need this once - should be automatically removed
-  // document.documentElement.removeEventListener( "click", start )
 
   // game play :
   if (connected)
@@ -334,7 +347,7 @@ game.on( EVENT_GAME_COMPLETED, ({timeElapsed}) => {
 window.addEventListener('keydown', event => {
   const isNumber = !isNaN( parseInt(event.key) )
 	if (isNumber){
-    activateBolt( parseInt(event.key) )
+    activateBolt( parseInt(event.key) - 1 )
   }
 })
 
