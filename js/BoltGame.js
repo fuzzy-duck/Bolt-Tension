@@ -72,6 +72,7 @@ export default class BoltGame extends EventManager {
     initialised = false
     playing = false
     activeBolt = -1
+    timeStarted = -1
     
     socket
     arduino
@@ -159,9 +160,8 @@ export default class BoltGame extends EventManager {
     areAllAnswersCorrect(){
         for (let index=0, l=this.boltQuantity; index<l; ++index)
         {
-            const answer = this.isBoltFaulty(index)
-            const choice = this.isUserChoiceFaulty(index)
-            if (answer !== choice){
+            const wasUserCorrect = this.isUserCorrect(index) 
+            if (!wasUserCorrect){
                 return false
             }
         }
@@ -169,23 +169,48 @@ export default class BoltGame extends EventManager {
     }
 
     /**
+     * Compares the user's answers with the actual answers
+     * @param {Number} boltIndex - bolt position
+     * @returns {Boolean} whether the user was right or wrong
+     */
+    isUserCorrect(boltIndex){
+        const answer = this.isBoltFaulty(boltIndex)
+        const choice = this.isUserChoiceFaulty(boltIndex)
+        return answer === choice
+    }
+
+    /**
      * 
-     * @param {*} boltIndex 
-     * @returns {Number} return the status number -1 -> 6
+     * @param {Number} boltIndex - bolt position
+     * @returns {Boolean} return if bolt at index is faulty
      */
     isUserChoiceFaulty( boltIndex ){
         return this.gameState.faultyBoltChoices[boltIndex]
     }
-    
+
+     /**
+     * 
+     * @param {Number} boltIndex - bolt position
+     * @returns {Boolean} return if bolt at index is faulty
+     */
     isBoltFaulty( boltIndex ){
         return this.gameState.actuallyFaultyBolts[boltIndex]
     }
 
+     /**
+     * 
+     * @param {Number} boltIndex - bolt position
+     * @returns {Boolean} return if bolt at index is faulty
+     */
     isBoltFunctional( boltIndex ){
         return !this.isBoltFaulty( boltIndex )
     }
 
-    hasGameCompleted(){
+     /**
+     * Has the user completed all the Bolts?
+      * @returns {Boolean} return if all bolts completed
+     */
+    haveAllBoltsBeenTested(){
         for (let i=0, l= this.boltQuantity; i < l ; ++i){
             if (this.gameState.faultyBoltChoices[i] === undefined) {
                 return false
@@ -195,10 +220,22 @@ export default class BoltGame extends EventManager {
     }
 
     /**
+     * restart the game, set everything to zero
+     * @returns 
+     */
+    async resetGame () {
+        // reset and randomise
+        this.gameState = this.createGameState()
+        // turn all LEDs off
+        return await this.arduino.resetLEDs()
+    }
+
+    /**
      * Start the game!
      */
     startGame(){
         this.playing = true
+        this.timeStarted = Date.now()
         sendGameStateToServer(this.gameState)
     }
 
@@ -248,7 +285,7 @@ export default class BoltGame extends EventManager {
         }
        
         // check to see if all answers have been given
-        let hasUserCompleted = this.hasGameCompleted()
+        let hasUserCompleted = this.haveAllBoltsBeenTested()
            
         if (hasUserCompleted)
         {
@@ -306,25 +343,19 @@ export default class BoltGame extends EventManager {
         // installation is in Attract People Mode :)
         // turn all LEDs into blinking lights to attract
         // passers by the engage (kinda like a screensaver)
-        return await this.aarduino.setAttractMode()
+        return await this.arduino.setAttractMode()
     }
 
     async showEndScreen () {
-
-        // turn all LEDs off
-        return await this.aarduino.resetLEDs()
-    }
-
-    // restart the game
-    async restartGame () {
-        this.gameState = this.createGameState()
         // turn all LEDs off
         return await this.arduino.resetLEDs()
     }
 
     onGameOver(){
+        const timeElapsed = Date.now() - this.timeStarted
         this.playing = false
-        this.dispatch(EVENT_GAME_COMPLETED)
+        sendGameStateToServer( this.gameState )
+        this.dispatch(EVENT_GAME_COMPLETED, {timeElapsed})
     }
 }
 
