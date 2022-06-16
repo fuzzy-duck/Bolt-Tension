@@ -6,6 +6,7 @@ let automaticSelectionInterval = -1
 let timeStarted = -1
 let timeOutInterval = -1
 let automaticallyShowFirstBolt = true
+
 const TIME_BETWEEN_BOLTS = 800
 
 const game = new BoltGame()
@@ -53,8 +54,7 @@ const showHomePage = ( useClick=true ) =>{
  * @returns {Boolean}
  */
 const resetGame = async (quick=false) => {
-  console.log("Resetting Game")
-
+  
   await game.showAttractMode()
 
   score = 0
@@ -77,19 +77,27 @@ const resetGame = async (quick=false) => {
     showHomePage()
     
     game.resetGame()
+    console.log("Resetting Game")
+
+  }else{
+    console.log("Creating Game")
+
   }
  
   return true
 }
 
+let userChoiceInterval = -1
+
+
 /**
  * Wait for a user to press either Faulty or Normal
  */
-const waitForUserChoice = async( timeAllowance=12000 ) => new Promise( (resolve,reject)=>{
+const waitForUserChoice = async( timeAllowance=( 1 * 60 * 1000 )) => new Promise( (resolve,reject)=>{
   
   console.log("Waiting for user to select faulty or normal")
   
-  const timeout = setTimeout(()=>{
+  userChoiceInterval = setTimeout(()=>{
     console.log("User may have left!")
     reject("Timed out - user probably left")
   }, timeAllowance )
@@ -97,7 +105,7 @@ const waitForUserChoice = async( timeAllowance=12000 ) => new Promise( (resolve,
   const end = (isFaulty) => {
     $(".btn-normal").unbind("click")
     $(".btn-faulty").unbind("click")
-    clearInterval(timeout)
+    clearInterval(userChoiceInterval)
     console.log("User selected faulty:"+isFaulty)
     
     resolve(isFaulty)
@@ -118,8 +126,9 @@ const activateBolt = async ( boltIndex ) => {
     console.warn("Bolt Changed even though Game has not started and is locked")
     return
   }
+  
   // show activity
-  restartTimeout()
+  clearInterval(userChoiceInterval)
 
  // FIXME: Presumably once the user returns the handheld device to a bolt their answer is reset on the front-end?
   

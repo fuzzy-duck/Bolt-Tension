@@ -134,7 +134,9 @@ export default class BoltGame extends EventManager {
         // remote data has changed - only use this for the slaves
         // so that we get data in realtime
         this.socket.on(EVENT_DATA_RECEIVED, data => {
-            console.log("[Socket] data:", data )
+            //console.log("[Socket] data:", data )
+
+            // 
         })  
 
         this.initialised = true
