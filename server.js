@@ -136,7 +136,12 @@ export const startServer = (serverPort = 3000, websocketServerPort = 8080) => {
 
     
     const server = app.listen(serverPort, () => {
-        console.log(`BOLT Tension => Check it out at https://localhost:${serverPort}`)
+        console.log(`BOLT Tension GAME => http://localhost:${serverPort} *REQUIRED TO BE RUNNING*`)
+        console.log(`Arduino States API => http://localhost:${serverPort}/serial ^ Requires ^`)
+        console.log(`Gameplay States API => http://localhost:${serverPort}/game ^ Requires ^`)
+
+
+        console.warn(`http://localhost:${serverPort}`)
     })    
 
     // Proxy websockets through HTTP server
@@ -159,7 +164,7 @@ export const startServer = (serverPort = 3000, websocketServerPort = 8080) => {
         // const ip = req.headers['x-forwarded-for'].split(',')[0].trim();
         const ip = req.socket.remoteAddress
         address = ip
-        console.log({ip})
+        // console.log({ip})
         
         // Alive tests for connected clients
         ws.isAlive = true
