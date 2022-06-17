@@ -79,11 +79,11 @@ export default class BoltGame extends EventManager {
 
     gameState
 
-    constructor( boltQuantity=8 )
+    constructor( socketPort=3000, boltQuantity=8 )
     {
         super()
         this.boltQuantity = boltQuantity
-        this.socket = new Socket()
+        this.socket = new Socket( socketPort )
         this.arduino = new BoltManager()
         this.gameState = this.createGameState()
     }

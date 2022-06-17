@@ -4,10 +4,11 @@ export const EVENT_DATA_RECEIVED = "data-received"
 
 export default class Socket extends EventManager {
 
-    constructor(address = "ws://localhost:3000" || "wss://localhost:3000")
+    // || "wss://localhost:3000"
+    constructor(port=3000, address = "ws://localhost")
     {
         super()
-        this.socket = new WebSocket(address)
+        this.socket = new WebSocket(address + ':' + port)
             
         // custom data to send to the server...
         // really all this should do is announce itself!

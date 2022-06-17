@@ -1,7 +1,15 @@
+import {isElectron} from './platform.js'
 import BoltGame, {EVENT_BOLT_ACTIVATED, EVENT_ALL_BOLTS_COMPLETED, EVENT_GAME_COMPLETED} from './BoltGame.js'
 
-const EVENT_ABORT_WAITING = "abort-waiting"
+// Settings!
 const TIME_BETWEEN_BOLTS = 600
+
+// port from URL if specified otherwise use default
+const port = new URLSearchParams(window.location.search).get("port") || isElectron() ? 1337 : 5555
+
+console.log("Connecting to port:",port)
+
+const EVENT_ABORT_WAITING = "abort-waiting"
 
 let connected = false
 let score = 0
@@ -12,37 +20,23 @@ let waiting = false
 let userChoiceInterval = -1
 let controller = new AbortController()
 
-const game = new BoltGame()
+const game = new BoltGame( port )
 const $home = $(".home")
 const $play = $(".play")
-
-const $next01 = $(".next01")
-const $next02 = $(".next02")
-const $next03 = $(".next03")
 const $start = $(".start")
+const nextButtons = [ $(".next01"), $(".next02"), $(".next03"), $start ]
+const startScreens = [ $(".htp01"), $(".htp02"), $(".htp03"), $(".htp04") ]
 
-const $screen01 = $(".htp01")
-const $screen02 = $(".htp02")
-const $screen03 = $(".htp03")
-const $screen04 = $(".htp04")
-
-const nextButtons = [ $next01, $next02, $next03, $start ]
-const startScreens = [  $screen01, $screen02, $screen03, $screen04 ]
-
+const isNumber = value => !isNaN( parseInt(value) )
+	
+// determine what this is running on...
 const connectToHardware = async () => {
 
   if (connected)
-  {
-    // start the game with randomised settings
-   
-    // will return the number -1 -> 6
-    // game.getBoltStatus( 0 )
+  {   
+    // game.getBoltStatus( 0 ) // will return the number -1 -> 6
     // game.isBoltFaulty( 0 )
     // game.isBoltFunctional( 0 )
-
-    // attach for next time
-    // startButton.addEventListener( "click", (event) => game.startGame() )
-
     // game.showAttractMode()
     // game.restart()
     // game.showEndScreen()
@@ -50,12 +44,13 @@ const connectToHardware = async () => {
 
   }else{
     console.log("Attempting to connect to Arduino...")
-    console.log("Accept the prompt if requested please!")
-  
+    console.warn("Accept the prompt if requested please!")
     connected = await game.initialise()
     return connected
   }
 }
+
+
 
 const hideHelpScreens = () => startScreens.forEach( $screen => $screen.hide() )
 
@@ -76,7 +71,7 @@ const showHelpPage = (pageIndex=0) => {
   const screen = startScreens[pageIndex]
   const $nextButton = nextButtons[pageIndex]
 
-  console.log("Showing Help Page "+pageIndex, {screen} )
+  console.log("Showing Help Page #"+(pageIndex+1) + '/' + startScreens.length )
 
   // reveal screen then hide homepage if there
   screen.fadeIn("fast","linear",complete=>{
@@ -85,14 +80,13 @@ const showHelpPage = (pageIndex=0) => {
     }
   })
 
-  $nextButton.delay(400).fadeIn("slow")
+  $nextButton.delay(450).fadeIn("slow")
 
   //
   if ($nextButton !== $start)
   {
     $nextButton.on("click", function (event) {
       showHelpPage( pageIndex+1 )
-      console.log(pageIndex, "Screen")
       $nextButton.unbind("click")
     })
 
@@ -106,7 +100,7 @@ const showHelpPage = (pageIndex=0) => {
       // and remove this screen
       screen.fadeOut('fast' )
 
-      console.warn("GAME COMMENCING!")
+      console.log("Get Ready!")
       // at some point we start the game
       startGame()
     })
@@ -388,6 +382,8 @@ const startGame = async () => {
     // go into fake mode...
     game.startGame()
     pickRandomBolt()
+
+
   }
   
   console.log( connected ? "Arduino Game Started at" : "Test Game Started at",  new Date(timeStarted) )
@@ -436,9 +432,10 @@ game.on( EVENT_GAME_COMPLETED, ({timeElapsed}) => {
   })
 })
 
+
+
 window.addEventListener('keydown', event => {
-  const isNumber = !isNaN( parseInt(event.key) )
-	if (game.playing && isNumber){
+  if (game.playing && isNumber(event.key)){
     activateBolt( parseInt(event.key) - 1 )
   }
 })

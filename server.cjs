@@ -1,6 +1,10 @@
-import { parse } from 'url'
-import Express from 'express'
-import { WebSocketServer, WebSocket } from 'ws'
+// import { parse } from 'url'
+// import Express from 'express'
+// import { WebSocketServer, WebSocket } from 'ws'
+
+const { parse } = require( 'url' )
+const Express = require('express')
+const { WebSocketServer, WebSocket } = require( 'ws' )
 
 const PING_TEST_TIME = 10000
 
@@ -17,7 +21,7 @@ let gameState = {
     leds: new Array(8).fill(-1)
 }
 
-export const startServer = (serverPort = 5555, websocketServerPort = 8080) => {
+const startServer = (serverPort = 5555) => {
 
     //initialize the Static & WebSocket server instance
     const app = Express()
@@ -139,9 +143,10 @@ export const startServer = (serverPort = 5555, websocketServerPort = 8080) => {
         console.log(`BOLT Tension GAME => http://localhost:${serverPort} *REQUIRED TO BE RUNNING*`)
         console.log(`Arduino States API => http://localhost:${serverPort}/serial ^ Requires ^`)
         console.log(`Gameplay States API => http://localhost:${serverPort}/game ^ Requires ^`)
+        console.log(`WebSockets API => ws://localhost:${serverPort}/ ^ Requires ^`)
 
 
-        console.warn(`http://localhost:${serverPort}`)
+        // console.warn(`http://localhost:${serverPort}`)
     })    
 
     // Proxy websockets through HTTP server
@@ -235,3 +240,8 @@ export const startServer = (serverPort = 5555, websocketServerPort = 8080) => {
     */
 }
 
+
+
+module.exports = {
+    startServer
+}
