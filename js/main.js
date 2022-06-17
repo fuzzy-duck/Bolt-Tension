@@ -80,19 +80,18 @@ const showHelpPage = (pageIndex=0) => {
   const screen = startScreens[pageIndex]
   const $nextButton = nextButtons[pageIndex]
 
-  console.log(pageIndex, screen, $nextButton, {startScreens,nextButtons } )
-
-  if (pageIndex > 0){
+  if (pageIndex > 0)
+  {
     const previousScreen = startScreens[pageIndex-1]
     console.log("Removing previous screen...", previousScreen)
-    previousScreen.prop("hidden", true)
+    previousScreen.hide('slow')
   }
   // TODO: hide previous screen?
   // $(".htp02").removeAttr("hidden").fadeIn()
 
   // reveal screen
   screen.removeAttr("hidden").fadeIn()
-  $nextButton.delay(300).removeAttr("hidden").fadeIn()
+  $nextButton.delay(200).removeAttr("hidden").fadeIn()
 
   //
   if ($nextButton !== $start)
@@ -110,15 +109,12 @@ const showHelpPage = (pageIndex=0) => {
     $start.on("click", function (event) {
 
       // and remove this screen
-      screen.fadeOut().prop("hidden", true)
+      screen.hide('slow' )
 
       console.warn("GAME COMMENCING!")
       // at some point we start the game
       startGame()
-
-      // $(".game-base").removeAttr("hidden").fadeIn()
     })
-   
   }
 }
 
@@ -380,25 +376,26 @@ const pickRandomBolt = async () => {
 
 const startGame = async () => {
 
+  timeStarted = Date.now()
+  hideHomePage()
+
   $(".bolt").on("click", function (event) {
     const boltIndex = parseInt( event.target.className.match(/(-\d+|\d+)(,\d+)*(\.\d+)*/g)  ) - 1
     activateBolt(boltIndex)
   })
 
-  console.log( connected ? "Connected to Arduino..." : "Arduino refused connection")
-
   // aut0 mode
   if (!connected && automaticallyShowFirstBolt)
   {
-    console.error("Couldn't connect to Arduino : faking transmissions")
+    console.log("Couldn't connect to Arduino : faking transmissions")
     // go into fake mode...
     game.startGame()
     pickRandomBolt()
   }
-
-  timeStarted = Date.now()
+  
   console.log( connected ? "Arduino Game Started at" : "Test Game Started at",  new Date(timeStarted) )
-  hideHomePage()
+ 
+  $(".game-base").removeAttr("hidden").fadeIn()
 }
 
 
