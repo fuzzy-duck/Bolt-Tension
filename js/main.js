@@ -76,8 +76,13 @@ const showHelpPage = (pageIndex=0) => {
   const screen = startScreens[pageIndex]
   const $nextButton = nextButtons[pageIndex]
 
-  // reveal screen
-  screen.fadeIn()
+  // reveal screen then hide homepage if there
+  screen.fadeIn("fast","linear",complete=>{
+    if (pageIndex === 0){
+      hideHomePage()
+    }
+  })
+
   $nextButton.delay(200).fadeIn()
 
   //
@@ -108,21 +113,21 @@ const showHelpPage = (pageIndex=0) => {
 
 /**
  * Show the very first page
- * @param {Boolean} useGlobalClick - use the button to start it
+ * @param {Boolean} tryToConnectArduino - use the button to start it
  */
-const showHomePage = ( useGlobalClick=true ) =>{ 
+const showHomePage = ( tryToConnectArduino=true ) =>{ 
   console.log("Showing Welcome Screen")
   $home.removeAttr("hidden")
   $play.delay(1000).fadeIn()
 
-  if (useGlobalClick)
+  if (tryToConnectArduino)
   {
     $play.on("click", function () {
 
       console.log("Play has been pressed by the user on screen")
 
       showHelpPage()
-
+      
       // $(".start").on("click", function () {
       //   // start the game!
       //   console.log("Start has been pressed by the user on screen")
@@ -368,7 +373,6 @@ const startGame = async () => {
       
   // Ensure we always start on the HomePage
   hideHelpScreens()
-  hideHomePage()
 
   $(".bolt").on("click", function (event) {
     const boltIndex = parseInt( event.target.className.match(/(-\d+|\d+)(,\d+)*(\.\d+)*/g)  ) - 1
