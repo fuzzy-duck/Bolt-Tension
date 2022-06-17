@@ -29,16 +29,12 @@ const $screen04 = $(".htp04")
 const nextButtons = [ $next01, $next02, $next03, $start ]
 const startScreens = [  $screen01, $screen02, $screen03, $screen04 ]
 
-
 const connectToHardware = async () => {
 
   if (connected)
   {
-    console.log("Start game")
-  
     // start the game with randomised settings
-    game.startGame()
-    
+   
     // will return the number -1 -> 6
     // game.getBoltStatus( 0 )
     // game.isBoltFaulty( 0 )
@@ -61,18 +57,18 @@ const connectToHardware = async () => {
   }
 }
 
+const hideHelpScreens = () => startScreens.forEach( $screen => $screen.hide() )
 
 // FIXME: Not very performant way of handling this...
 const showResults = () => document.querySelectorAll(".result").forEach( bolt => bolt.removeAttribute("hidden"))
 const hideResults = () => document.querySelectorAll(".result").forEach( bolt => bolt.setAttribute("hidden", true))
 
+
 const hideHomePage = () =>{ 
   console.log("Hiding Welcome Screen")
   $home.attr("hidden",true)
-  $play.unbind("click").fadeOut()
-  // $(".start").unbind("click")
+  $play.unbind("click").attr("hidden",true)
 }
-
 
 // This will show only one page at a time...
 const showHelpPage = (pageIndex=0) => {
@@ -80,36 +76,28 @@ const showHelpPage = (pageIndex=0) => {
   const screen = startScreens[pageIndex]
   const $nextButton = nextButtons[pageIndex]
 
-  if (pageIndex > 0)
-  {
-    const previousScreen = startScreens[pageIndex-1]
-    console.log("Removing previous screen...", previousScreen)
-    previousScreen.hide('slow')
-  }
-  // TODO: hide previous screen?
-  // $(".htp02").removeAttr("hidden").fadeIn()
-
   // reveal screen
-  screen.removeAttr("hidden").fadeIn()
-  $nextButton.delay(200).removeAttr("hidden").fadeIn()
+  screen.fadeIn()
+  $nextButton.delay(200).fadeIn()
 
   //
   if ($nextButton !== $start)
   {
-    console.log("Next Button showing")
     $nextButton.on("click", function (event) {
       showHelpPage( pageIndex+1 )
       console.log(pageIndex, "Screen")
+      $nextButton.unbind("click")
     })
 
   }else{
 
-    console.log("Start Button showing")
     // bring game in???
     $start.on("click", function (event) {
 
+      $start.unbind("click")
+
       // and remove this screen
-      screen.hide('slow' )
+      screen.fadeOut('fast' )
 
       console.warn("GAME COMMENCING!")
       // at some point we start the game
@@ -190,7 +178,7 @@ const resetGame = async (quick=false) => {
   }else{
     console.log("Creating Game")
   }
- 
+
   return true
 }
 
@@ -377,6 +365,9 @@ const pickRandomBolt = async () => {
 const startGame = async () => {
 
   timeStarted = Date.now()
+      
+  // Ensure we always start on the HomePage
+  hideHelpScreens()
   hideHomePage()
 
   $(".bolt").on("click", function (event) {
@@ -402,7 +393,6 @@ const startGame = async () => {
 // Start here ----- 
 
 // game play interactions
-
 
 $(".btn-check").on("mousedown", showResults )
 $(".btn-check").on("mouseup", hideResults )
@@ -446,6 +436,9 @@ window.addEventListener('keydown', event => {
     activateBolt( parseInt(event.key) - 1 )
   }
 })
+
+// Ensure we always start on the HomePage
+hideHelpScreens()
 
 // Game Begins
 resetGame( true )
