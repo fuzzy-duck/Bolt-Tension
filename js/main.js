@@ -44,8 +44,8 @@ const showHomePage = ( useClick=true ) =>{
 
       console.log("Play has been pressed by the user on screen")
 
-      $(".howtoplay").removeAttr("hidden").fadeIn()
-      $(".game-base").removeAttr("hidden").fadeIn()
+      //$(".howtoplay").removeAttr("hidden").fadeIn()
+      //$(".game-base").removeAttr("hidden").fadeIn()
 
       //startGame()
 
