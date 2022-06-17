@@ -12,7 +12,9 @@ let userChoiceInterval = -1
 let controller = new AbortController()
 
 const game = new BoltGame()
+const $home = $(".home")
 const $play = $(".play")
+
 const $next01 = $(".next01")
 const $next02 = $(".next02")
 const $next03 = $(".next03")
@@ -24,14 +26,18 @@ const hideResults = () => document.querySelectorAll(".result").forEach( bolt => 
 
 const hideHomePage = () =>{ 
   console.log("Hiding Welcome Screen")
-  $('.home').attr("hidden",true)
+  $home.attr("hidden",true)
   $play.unbind("click").fadeOut()
   // $(".start").unbind("click")
 }
 
+const showHelpPage = pageIndex => {
+
+}
+
 const showHomePage = ( useClick=true ) =>{ 
   console.log("Showing Welcome Screen")
-  $('.home').removeAttr("hidden")
+  $home.removeAttr("hidden")
   $play.delay(1000).fadeIn()
   if (useClick)
   {
@@ -84,7 +90,7 @@ const resetGame = async (quick=false) => {
     //   bolt.classList.remove("tick", "cross") 
     // })
     
-    $(".bolt").removeClass("active normal faulty") 
+    $(".bolt").removeClass("active normal faulty").unbind("click") 
     $(".result").attr("hidden", true).removeClass("tick cross") 
   
     game.resetGame()
@@ -152,6 +158,10 @@ const activateBolt = async ( boltIndex ) => {
   // create new signal
   controller = new AbortController()
 
+  if (isNaN(boltIndex)){
+    throw Error("This is not a boltIndex! : "+boltIndex)
+  }
+
   if (!game.playing)
   {
     console.warn("Bolt Changed even though Game has not started and is locked")
@@ -166,52 +176,48 @@ const activateBolt = async ( boltIndex ) => {
 
   waiting = true
 
-  // show activity
-  clearInterval(userChoiceInterval)
-
- // FIXME: Presumably once the user returns the handheld device to a bolt their answer is reset on the front-end?
-  
   // FIXME: However, once a bolt has been activated the user can return to it
   // and reactivate it using the handheld device and change their answer....
   // if it's incorrect (by pressing faulty or normal)
 
-  if (isNaN(boltIndex)){
-    throw Error("This is not a boltIndex! : "+boltIndex)
-  }
+  // clearInterval(userChoiceInterval)
 
-  // we clear interval in case one was queued up before
+  // we clear the automatic bolt selection interval in case one was queued up before
   clearInterval(automaticSelectionInterval)
  
   const boltNumber = boltIndex + 1
   const boltClassName = ".bolt0" + boltNumber
   const $bolt = $(boltClassName)
   const $result = $(".result", $(boltClassName))
+  const currentState = $bolt.attr("class") 
+  const currentResult = $result.attr("class") 
+  const currentMode = (currentState.match(/(faulty|normal)/)||[])[0]
+  const currentChoice = (currentResult.match(/(tick|cross)/)||[])[0]
 
   // remove all other active classes
-  document.querySelectorAll(".bolt.active").forEach( bolt =>{ 
-    bolt.classList.remove("active") 
-  })
-
+  // document.querySelectorAll(".bolt.active").forEach( bolt =>{ 
+  //   bolt.classList.remove("active") 
+  // })
+  $(".bolt.active").removeClass("active") 
+ 
   // now add to the newly active one
   $bolt.removeClass("normal faulty").addClass("active")
 
   // console.log("Added active class to $("+boltClassName + ")" )
 
   // play video on the front end (possible 4 faulty videos 8 normal video)
-  console.log("Now playing video file for user to guess if Bolt "+boltClassName+" is faulty or not")
-  
-  // Pause
+  console.log("Bolt previously had ["+currentState+"] -> "+currentMode)
+  console.log("Playing video file for user to guess if Bolt "+boltClassName+" is faulty or not")
+  console.log({currentMode, currentChoice})
+
+  // Pause if we would like one :)
   // await new Promise(resolve => setTimeout(resolve, 200 ))
   
-  // TODO: The user decides if it is faulty or normal by pressing the front end buttons
+  // The user decides if it is faulty or normal by pressing the front end buttons
   // The user now decides if it is faulty or normal by pressing the front end buttons
   // wait for faulty or none faulty buttons
-
-  // This correct or incorrect score (x or tick) is registered but only 
-  // revealed by pressing the check button
   try{
 
-    // this needs to be cancellable
     const userThinksItIsFaulty = await waitForUserChoice( controller.signal )
     
     // now check the answer is correct
@@ -223,6 +229,8 @@ const activateBolt = async ( boltIndex ) => {
       score++
     }
 
+    // This correct or incorrect score (x or tick) is registered but only 
+    // revealed by pressing the check button
     const choiceClass = wasUserCorrect ? "tick" : "cross"
     $result.removeClass("tick cross").addClass(choiceClass)
 
@@ -238,7 +246,6 @@ const activateBolt = async ( boltIndex ) => {
       }, TIME_BETWEEN_BOLTS )
 
     }else{
-      
       console.log("Game complete?", game )
     }
 
@@ -246,10 +253,18 @@ const activateBolt = async ( boltIndex ) => {
 
     if ( error.name === EVENT_ABORT_WAITING)
     {
+      // FIXME: If this bolt had a previous state, revert it...
       // ignore this event - just means the previous promise was cancelled
       // and we don't want to use the status of it anywhere as we consider it
       // out of date
-      console.log(error.message)
+      if (currentMode && currentChoice)
+      {
+        console.log("Reverting to previous known state")
+        $bolt.addClass(currentMode)
+        $result.addClass(currentChoice)
+      }else{
+        console.log(error.message)
+      }
       
     }else{
       // timeout 
@@ -262,7 +277,7 @@ const activateBolt = async ( boltIndex ) => {
 
 // End the game (after timeout)
 const endGame = async () => {
-  console.log("Ending game prematureely")
+  console.log("Ending game prematureely\n")
   await resetGame()
 }
 
@@ -300,6 +315,10 @@ const startGame = async () => {
   
     connected = await game.initialise()
   }
+  $(".bolt").on("click", function (event) {
+    const boltIndex = parseInt( event.target.className.match(/(-\d+|\d+)(,\d+)*(\.\d+)*/g)  ) - 1
+    activateBolt(boltIndex)
+  })
 
   console.log( connected ? "Connected to Arduino..." : "Arduino refused connection")
 
@@ -321,10 +340,7 @@ const startGame = async () => {
 // Start here ----- 
 
 // game play interactions
-$(".bolt").on("click", function (event) {
-  const boltIndex = parseInt( event.target.className.match(/(-\d+|\d+)(,\d+)*(\.\d+)*/g)  ) - 1
-  activateBolt(boltIndex)
-})
+
 
 $(".btn-check").on("mousedown", showResults )
 $(".btn-check").on("mouseup", hideResults )
