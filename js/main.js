@@ -1,18 +1,17 @@
 import BoltGame, {EVENT_BOLT_ACTIVATED, EVENT_ALL_BOLTS_COMPLETED, EVENT_GAME_COMPLETED} from './BoltGame.js'
 
+const EVENT_ABORT_WAITING = "abort-waiting"
+const TIME_BETWEEN_BOLTS = 600
+
 let connected = false
 let score = 0
 let automaticSelectionInterval = -1
 let timeStarted = -1
-let timeOutInterval = -1
 let automaticallyShowFirstBolt = true
-
-const TIME_BETWEEN_BOLTS = 800
-
 let userChoiceInterval = -1
 let controller = new AbortController()
-const game = new BoltGame()
 
+const game = new BoltGame()
 const $play = $(".play")
 
 // FIXME: Not very performant way of handling this...
@@ -22,17 +21,13 @@ const hideResults = () => document.querySelectorAll(".result").forEach( bolt => 
 const hideHomePage = () =>{ 
   console.log("Hiding Welcome Screen")
   $('.home').attr("hidden",true)
-  $play.fadeOut()
-  $play.unbind("click")
+  $play.unbind("click").fadeOut()
   // $(".start").unbind("click")
 }
 
 const showHomePage = ( useClick=true ) =>{ 
   console.log("Showing Welcome Screen")
-    
   $('.home').removeAttr("hidden")
-
-
   $play.delay(1000).fadeIn()
   if (useClick)
   {
@@ -60,33 +55,35 @@ const showHomePage = ( useClick=true ) =>{
  */
 const resetGame = async (quick=false) => {
   
+  // put arduino into Attract Mode
   await game.showAttractMode()
 
   score = 0
 
   // we clear interval in case one was queued up before
   clearInterval(automaticSelectionInterval)
-  clearInterval(timeOutInterval)
 
   if (!quick)
   {
-    // reset gui too
-    document.querySelectorAll(".bolt").forEach( bolt =>{ 
-      bolt.classList.remove("active", "faulty", "normal") 
-    })
+   // reset gui too
+    // document.querySelectorAll(".bolt").forEach( bolt =>{ 
+    //   bolt.classList.remove("active", "faulty", "normal") 
+    // })
 
-    document.querySelectorAll(".result").forEach( bolt =>{ 
-      bolt.setAttribute("hidden", true)
-      bolt.classList.remove("tick", "cross") 
-    })
-    showHomePage()
+    // document.querySelectorAll(".result").forEach( bolt =>{ 
+    //   bolt.setAttribute("hidden", true)
+    //   bolt.classList.remove("tick", "cross") 
+    // })
     
+    $(".bolt").removeClass("active normal faulty") 
+    $(".result").attr("hidden", true).removeClass("tick cross") 
+  
     game.resetGame()
     console.log("Resetting Game")
+    showHomePage()
 
   }else{
     console.log("Creating Game")
-
   }
  
   return true
@@ -97,36 +94,42 @@ const resetGame = async (quick=false) => {
  * Wait for a user to press either Faulty or Normal
  */
 const waitForUserChoice = async( signal, timeAllowance=( 1 * 60 * 1000 )) => new Promise( (resolve,reject)=>{
-  
-  if (signal.aborted) {
-		reject(new DOMException('Aborted', 'AbortError'))
+
+  const cleanUp = () => {
+    $(".btn-normal").unbind("click")
+    $(".btn-faulty").unbind("click")
+    clearInterval(userChoiceInterval)
+  }
+
+  const cancel = (reason) => {
+    cleanUp()
+    reject(reason)
+  }
+
+  if (signal.aborted) 
+  {
+		cancel(new DOMException('Aborted', EVENT_ABORT_WAITING))
 	}
 
   console.log("Waiting for user to select faulty or normal")
   
   userChoiceInterval = setTimeout(()=>{
-    console.log("User may have left!")
-    reject("Timed out - user probably left")
+    cancel("Timed out - user probably left")
   }, timeAllowance )
 
   const end = (isFaulty) => {
-    $(".btn-normal").unbind("click")
-    $(".btn-faulty").unbind("click")
-    clearInterval(userChoiceInterval)
-    console.log("User selected faulty:"+isFaulty)
+    console.log("User selected "+(isFaulty ? "Faulty" : "Normal"))
+    cleanUp()
     resolve(isFaulty)
   }
 
-  $(".btn-normal").on("click", function () {
-    end(false)
-  })
-  
-  $(".btn-faulty").on("click", function () {
-    end(true)
-  })
+  $(".btn-normal").on("click", e => end(false) )
+  $(".btn-faulty").on("click", e => end(true) )
 
   signal.addEventListener('abort', () => {
-    reject(new DOMException('Aborted', 'AbortError'))
+    // This wait was interupted by the user selecting another bolt
+    // before making a decision about the previous bolt
+    cancel(new DOMException('User Selected a different bolt before chossing faulty or normal',EVENT_ABORT_WAITING))
   })
 })
  
@@ -140,12 +143,14 @@ const activateBolt = async ( boltIndex ) => {
   // create new signal
   controller = new AbortController()
 
-  if (!game.playing){
+  if (!game.playing)
+  {
     console.warn("Bolt Changed even though Game has not started and is locked")
     return
   }
 
-  if (waiting){
+  if (waiting)
+  {
     // hmm we are trying to activate a bolt while one is still activating...
     console.log("A different Bolt was selected by the user before a decision was made")
   }
@@ -230,13 +235,15 @@ const activateBolt = async ( boltIndex ) => {
 
   }catch(error){
 
-    if (error.name && error.name === "AbortError")
+    if ( error.name === EVENT_ABORT_WAITING)
     {
       // ignore this event - just means the previous promise was cancelled
       // and we don't want to use the status of it anywhere as we consider it
       // out of date
+      console.log(error.message)
+      
     }else{
-      // timeout
+      // timeout 
       endGame()
     }
   }
