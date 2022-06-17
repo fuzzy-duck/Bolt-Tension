@@ -88,7 +88,7 @@ line-height: 1em;
 .btn {
 position: absolute;
 color: white;
-background: #6DB6AF;
+background: #DDA842;
 font-size: 35pt;
 min-width: 300px;
 text-align: center;
@@ -130,8 +130,22 @@ height: 1080px;
 position: absolute;
 top: 0;
 left: 0;
-background: url(../img/instructions.svg);
 }
+.htp01 {
+    background: url(../img/htp01.svg);
+}
+.htp02 {
+    background: url(../img/htp02.svg);
+}
+.htp03 {
+    background: url(../img/htp03.svg);
+}
+.htp04 {
+    background: url(../img/htp04.svg);
+}
+
+
+/*
 .howtoplay .textbox {
 color: white;
 position: absolute;
@@ -155,6 +169,7 @@ font-family: 'GilroyMedium';
 color: white;
 font-size: 30pt;
 }
+*/
 .start {
 left: 80px;
 top: 680px;

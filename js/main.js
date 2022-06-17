@@ -13,6 +13,10 @@ let controller = new AbortController()
 
 const game = new BoltGame()
 const $play = $(".play")
+const $next01 = $(".next01")
+const $next02 = $(".next02")
+const $next03 = $(".next03")
+const $start = $(".start")
 
 // FIXME: Not very performant way of handling this...
 const showResults = () => document.querySelectorAll(".result").forEach( bolt => bolt.removeAttribute("hidden"))
@@ -35,10 +39,10 @@ const showHomePage = ( useClick=true ) =>{
 
       console.log("Play has been pressed by the user on screen")
 
-      $(".howtoplay").removeAttr("hidden").fadeIn()
+      $(".htp01").removeAttr("hidden").fadeIn()
       $(".game-base").removeAttr("hidden").fadeIn()
 
-      startGame()
+      //startGame()
 
       // $(".start").on("click", function () {
       //   // start the game!
@@ -47,6 +51,11 @@ const showHomePage = ( useClick=true ) =>{
     })
   }
 }
+
+$next01.on("click", function () {
+  $(".htp02").removeAttr("hidden").fadeIn()
+  console.log("first how to play page")
+})
 
 /**
  * Reset the game and all the variables so that
