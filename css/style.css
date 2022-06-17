@@ -145,6 +145,13 @@ z-index:1;
     background: url(../img/htp04.svg);
 }
 
+.next01,.next02,.next03 {
+    top: 740px;
+    left: 90px;
+    width: 170px !important;
+    min-width: auto;
+}
+
 
 /*
 .howtoplay .textbox {
@@ -173,7 +180,7 @@ font-size: 30pt;
 */
 .start {
 left: 80px;
-top: 680px;
+top: 740px;
 }
 .game-base {
 width: 1920px;
