@@ -130,6 +130,7 @@ height: 1080px;
 position: absolute;
 top: 0;
 left: 0;
+z-index:1;
 }
 .htp01 {
     background: url(../img/htp01.svg);

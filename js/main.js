@@ -8,6 +8,7 @@ let score = 0
 let automaticSelectionInterval = -1
 let timeStarted = -1
 let automaticallyShowFirstBolt = true
+let waiting = false
 let userChoiceInterval = -1
 let controller = new AbortController()
 
@@ -20,6 +21,47 @@ const $next02 = $(".next02")
 const $next03 = $(".next03")
 const $start = $(".start")
 
+const $screen01 = $(".htp01")
+const $screen02 = $(".htp02")
+const $screen03 = $(".htp03")
+const $screen04 = $(".htp04")
+
+const nextButtons = [ $next01, $next02, $next03, $start ]
+const startScreens = [  $screen01, $screen02, $screen03, $screen04 ]
+
+
+const connectToHardware = async () => {
+
+  if (connected)
+  {
+    console.log("Start game")
+  
+    // start the game with randomised settings
+    game.startGame()
+    
+    // will return the number -1 -> 6
+    // game.getBoltStatus( 0 )
+    // game.isBoltFaulty( 0 )
+    // game.isBoltFunctional( 0 )
+
+    // attach for next time
+    // startButton.addEventListener( "click", (event) => game.startGame() )
+
+    // game.showAttractMode()
+    // game.restart()
+    // game.showEndScreen()
+    return true
+
+  }else{
+    console.log("Attempting to connect to Arduino...")
+    console.log("Accept the prompt if requested please!")
+  
+    connected = await game.initialise()
+    return connected
+  }
+}
+
+
 // FIXME: Not very performant way of handling this...
 const showResults = () => document.querySelectorAll(".result").forEach( bolt => bolt.removeAttribute("hidden"))
 const hideResults = () => document.querySelectorAll(".result").forEach( bolt => bolt.setAttribute("hidden", true))
@@ -31,37 +73,89 @@ const hideHomePage = () =>{
   // $(".start").unbind("click")
 }
 
-const showHelpPage = pageIndex => {
 
+// This will show only one page at a time...
+const showHelpPage = (pageIndex=0) => {
+
+  const screen = startScreens[pageIndex]
+  const $nextButton = nextButtons[pageIndex]
+
+  console.log(pageIndex, screen, $nextButton, {startScreens,nextButtons } )
+
+  if (pageIndex > 0){
+    const previousScreen = startScreens[pageIndex-1]
+    console.log("Removing previous screen...", previousScreen)
+    previousScreen.prop("hidden", true)
+  }
+  // TODO: hide previous screen?
+  // $(".htp02").removeAttr("hidden").fadeIn()
+
+  // reveal screen
+  screen.removeAttr("hidden").fadeIn()
+  $nextButton.delay(300).removeAttr("hidden").fadeIn()
+
+  //
+  if ($nextButton !== $start)
+  {
+    console.log("Next Button showing")
+    $nextButton.on("click", function (event) {
+      showHelpPage( pageIndex+1 )
+      console.log(pageIndex, "Screen")
+    })
+
+  }else{
+
+    console.log("Start Button showing")
+    // bring game in???
+    $start.on("click", function (event) {
+
+      // and remove this screen
+      screen.fadeOut().prop("hidden", true)
+
+      console.warn("GAME COMMENCING!")
+      // at some point we start the game
+      startGame()
+
+      // $(".game-base").removeAttr("hidden").fadeIn()
+    })
+   
+  }
 }
 
-const showHomePage = ( useClick=true ) =>{ 
+/**
+ * Show the very first page
+ * @param {Boolean} useGlobalClick - use the button to start it
+ */
+const showHomePage = ( useGlobalClick=true ) =>{ 
   console.log("Showing Welcome Screen")
   $home.removeAttr("hidden")
   $play.delay(1000).fadeIn()
-  if (useClick)
+
+  if (useGlobalClick)
   {
     $play.on("click", function () {
 
       console.log("Play has been pressed by the user on screen")
 
-      $(".htp01").removeAttr("hidden").fadeIn()
-      $(".game-base").removeAttr("hidden").fadeIn()
-
-      //startGame()
+      showHelpPage()
 
       // $(".start").on("click", function () {
       //   // start the game!
       //   console.log("Start has been pressed by the user on screen")
       // }).delay(2000).fadeIn()
     })
+  }else{
+        
+    // This is used to allow the Serial Controller to act in place of the Play button
+    document.documentElement.addEventListener( "click", e => {
+
+      connectToHardware()
+      showHelpPage()
+    
+    }, { once: true } )
+
   }
 }
-
-$next01.on("click", function () {
-  $(".htp02").removeAttr("hidden").fadeIn()
-  console.log("first how to play page")
-})
 
 /**
  * Reset the game and all the variables so that
@@ -132,14 +226,14 @@ const waitForUserChoice = async( signal, timeAllowance=( 1 * 60 * 1000 )) => new
     cancel("Timed out - user probably left")
   }, timeAllowance )
 
-  const end = (isFaulty) => {
+  const userSelected = (isFaulty) => {
     console.log("User selected "+(isFaulty ? "Faulty" : "Normal"))
     cleanUp()
     resolve(isFaulty)
   }
 
-  $(".btn-normal").on("click", e => end(false) )
-  $(".btn-faulty").on("click", e => end(true) )
+  $(".btn-normal").on("click", e => userSelected(false) )
+  $(".btn-faulty").on("click", e => userSelected(true) )
 
   signal.addEventListener('abort', () => {
     // This wait was interupted by the user selecting another bolt
@@ -149,7 +243,6 @@ const waitForUserChoice = async( signal, timeAllowance=( 1 * 60 * 1000 )) => new
 })
  
 
-let waiting = false
 const activateBolt = async ( boltIndex ) => {
 
   // kill any previous promises!
@@ -188,9 +281,9 @@ const activateBolt = async ( boltIndex ) => {
   const boltNumber = boltIndex + 1
   const boltClassName = ".bolt0" + boltNumber
   const $bolt = $(boltClassName)
-  const $result = $(".result", $(boltClassName))
-  const currentState = $bolt.attr("class") 
-  const currentResult = $result.attr("class") 
+  const $result = $(".result", $bolt)
+  const currentState = $bolt.attr("class") || ''
+  const currentResult = $result.attr("class") || ''
   const currentMode = (currentState.match(/(faulty|normal)/)||[])[0]
   const currentChoice = (currentResult.match(/(tick|cross)/)||[])[0]
 
@@ -206,9 +299,8 @@ const activateBolt = async ( boltIndex ) => {
   // console.log("Added active class to $("+boltClassName + ")" )
 
   // play video on the front end (possible 4 faulty videos 8 normal video)
-  console.log("Bolt previously had ["+currentState+"] -> "+currentMode)
+  // console.log("Bolt previously had ["+currentState+"] -> "+currentMode)
   console.log("Playing video file for user to guess if Bolt "+boltClassName+" is faulty or not")
-  console.log({currentMode, currentChoice})
 
   // Pause if we would like one :)
   // await new Promise(resolve => setTimeout(resolve, 200 ))
@@ -259,7 +351,7 @@ const activateBolt = async ( boltIndex ) => {
       // out of date
       if (currentMode && currentChoice)
       {
-        console.log("Reverting to previous known state")
+        console.log("Reverting to previous known state ", currentMode, currentChoice )
         $bolt.addClass(currentMode)
         $result.addClass(currentChoice)
       }else{
@@ -288,33 +380,6 @@ const pickRandomBolt = async () => {
 
 const startGame = async () => {
 
-  if (connected)
-  {
-    console.log("Start game")
-  
-    // start the game with randomised settings
-    game.startGame()
-    
-    // will return the number -1 -> 6
-    // game.getBoltStatus( 0 )
-    // game.isBoltFaulty( 0 )
-    // game.isBoltFunctional( 0 )
-
-    // attach for next time
-    // startButton.addEventListener( "click", (event) => game.startGame() )
-
-    // game.showAttractMode()
-    // game.restart()
-    // game.showEndScreen()
-
-    // TODO: If there is no user interaction through the AV for 5 minutes the exhibit resets
-
-  }else{
-    console.log("Attempting to connect to Arduino...")
-    console.log("Accept the prompt if requested please!")
-  
-    connected = await game.initialise()
-  }
   $(".bolt").on("click", function (event) {
     const boltIndex = parseInt( event.target.className.match(/(-\d+|\d+)(,\d+)*(\.\d+)*/g)  ) - 1
     activateBolt(boltIndex)
@@ -386,11 +451,7 @@ window.addEventListener('keydown', event => {
 })
 
 // Game Begins
-// This is used to allow the Serial Controller
-document.documentElement.addEventListener( "click", startGame, { once: true } )
-
 resetGame( true )
-showHomePage( false )
 
-// Game Begins
-// resetGame( true )
+// fake home page for first click!
+showHomePage( false )
