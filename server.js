@@ -17,7 +17,7 @@ let gameState = {
     leds: new Array(8).fill(-1)
 }
 
-export const startServer = (serverPort = 3000, websocketServerPort = 8080) => {
+export const startServer = (serverPort = 5555, websocketServerPort = 8080) => {
 
     //initialize the Static & WebSocket server instance
     const app = Express()
