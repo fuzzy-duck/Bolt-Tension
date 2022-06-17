@@ -76,6 +76,8 @@ const showHelpPage = (pageIndex=0) => {
   const screen = startScreens[pageIndex]
   const $nextButton = nextButtons[pageIndex]
 
+  console.log("Showing Help Page "+pageIndex, {screen} )
+
   // reveal screen then hide homepage if there
   screen.fadeIn("fast","linear",complete=>{
     if (pageIndex === 0){
@@ -83,7 +85,7 @@ const showHelpPage = (pageIndex=0) => {
     }
   })
 
-  $nextButton.delay(200).fadeIn()
+  $nextButton.delay(400).fadeIn("slow")
 
   //
   if ($nextButton !== $start)
@@ -436,7 +438,7 @@ game.on( EVENT_GAME_COMPLETED, ({timeElapsed}) => {
 
 window.addEventListener('keydown', event => {
   const isNumber = !isNaN( parseInt(event.key) )
-	if (isNumber){
+	if (game.playing && isNumber){
     activateBolt( parseInt(event.key) - 1 )
   }
 })
