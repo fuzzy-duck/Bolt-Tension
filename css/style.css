@@ -246,3 +246,13 @@ left: 0;
 z-index: 99999;
 background: url(../img/well-done.svg);
 }
+
+
+#tests{
+    position: fixed;
+    top:12px;
+    left:12px;
+    right:12px;
+    display: block;
+    z-index:999;
+}
