@@ -1,12 +1,16 @@
 // Modules to control application life and create native browser window
 const {app, BrowserWindow} = require('electron')
 const path = require('path')
+const IPAddress = require('quick-local-ip')
 
 // import {app, BrowserWindow} from 'electron'
 // import path from 'path'
 
 // TODO: Implement server for sock
 const {startServer} = require('./server.cjs')
+
+const externalIPAddress = IPAddress.getLocalIP4()
+console.log( "WebSockets available at : "+externalIPAddress  )
 
 function createWindow () {
   // Create the browser window.
@@ -25,7 +29,7 @@ function createWindow () {
   // mainWindow.webContents.openDevTools()
 
   // connect web sockets?
-  startServer( 1337 )
+  startServer( 1337, externalIPAddress )
 }
 
 // This method will be called when Electron has finished

@@ -19,6 +19,7 @@
     "jquery": "^3.6.0",
     "jquery-idletimer": "^1.0.0",
     "node-udp-forwarder": "^0.1.0",
+    "quick-local-ip": "^1.0.7",
     "save": "^2.5.0",
     "ws": "^8.8.0"
   },

@@ -6,6 +6,8 @@ const { parse } = require( 'url' )
 const Express = require('express')
 const { WebSocketServer, WebSocket } = require( 'ws' )
 
+const BOLT_QUANTITY = 8
+
 const PING_TEST_TIME = 10000
 
 let address = "localhost"
@@ -13,15 +15,16 @@ let address = "localhost"
 // singelton state
 let apiState = {
     bolt:-1,
-    leds: new Array(8).fill(-1)
+    leds: new Array(BOLT_QUANTITY).fill(-1)
 }
 
 let gameState = {
-    bolt:-1,
-    leds: new Array(8).fill(-1)
+    activeBolt:-1,
+    faultyBoltChoices:new Array(BOLT_QUANTITY).fill(null),
+    actuallyFaultyBolts:new Array(BOLT_QUANTITY).fill(null)
 }
 
-const startServer = (serverPort = 5555) => {
+const startServer = (serverPort = 5555, IPAddress='127.0.0.1') => {
 
     //initialize the Static & WebSocket server instance
     const app = Express()
@@ -65,19 +68,15 @@ const startServer = (serverPort = 5555) => {
 
     app.get('/serial/', (req, res) => {
         //console.log("Data being passed in from arduino")
-        res.send('Serial Comms API')
+        res.send('Serial Comms API ONLY')
     })
   
-    // example: http://localhost:3000/state
-    app.get('/snapshot', function(req, res, next){
-        res.header("Content-Type",'application/json')
-        res.end(JSON.stringify(apiState, null, 3))
-    })
-
     app.get('/serial/:bolt', function(req, res, next){
         
         // you can pass data into it
         const bolt = req.params.bolt
+
+        gameState.activeBolt = bolt
 
         console.log("Data being passed in from arduino", bolt)
 
@@ -101,10 +100,10 @@ const startServer = (serverPort = 5555) => {
         const snapshot = req.body // || req.params.snapshot
         const json = JSON.stringify(snapshot, null, 3)
         gameState = snapshot
-        console.log("GAME Data being passed in from arduino", json)
+        console.log("GAME Data being passed in from browser", json)
 
         // send out to connected clients
-        sendToAllClients("game:"+json, false)
+        sendToAllClients( json, false)
 
         if (snapshot)
         {
@@ -116,7 +115,13 @@ const startServer = (serverPort = 5555) => {
     })
 
 
+    // example: http://localhost:3000/state
+    app.get('/snapshot', function(req, res, next){
+        res.header("Content-Type",'application/json')
+        res.end(JSON.stringify(apiState, null, 3))
+    })
 
+    // example: http://localhost:3000/snapshot/
     app.post('/snapshot/', function(req, res, next){
         // res.json()
         const snapshot = req.body // || req.params.snapshot
@@ -126,7 +131,7 @@ const startServer = (serverPort = 5555) => {
         console.log("ARDUINO Data being passed in from arduino", json)
 
         // send out to connected clients
-        sendToAllClients("snapshot:"+json, false)
+        sendToAllClients( json, false)
 
         if (snapshot)
         {
@@ -137,22 +142,22 @@ const startServer = (serverPort = 5555) => {
         }
     })
 
-
-    
     const server = app.listen(serverPort, () => {
-        console.log(`BOLT Tension GAME => http://localhost:${serverPort} *REQUIRED TO BE RUNNING*`)
-        console.log(`Arduino States API => http://localhost:${serverPort}/serial ^ Requires ^`)
-        console.log(`Gameplay States API => http://localhost:${serverPort}/game ^ Requires ^`)
-        console.log(`WebSockets API => ws://localhost:${serverPort}/ ^ Requires ^`)
-
-
+        const url = 'localhost'
+        const ip = IPAddress
+        console.log(`BOLT Tension GAME => http://${url}:${serverPort} *REQUIRED TO BE RUNNING*`)
+       // console.log(`Serial Comms API => http://${url}:${serverPort}/serial ^ Requires ^`)
+        console.log(`Arduino States API => http://${url}:${serverPort}/snapshot ^ Requires ^`)
+        console.log(`Gameplay States API => http://${url}:${serverPort}/game ^ Requires ^`)
+        console.log(`WebSockets API INTERNAL => ws://${url}:${serverPort}/ ^ Requires ^`)
+        console.log(`WebSockets API EXTERNAL => ws://${ip}:${serverPort}/ ^ Requires ^`)
         // console.warn(`http://localhost:${serverPort}`)
     })    
 
     // Proxy websockets through HTTP server
     server.on('upgrade', function upgrade(request, socket, head) {
         const { pathname } = parse(request.url)
-        console.log(`BOLT Tension => Data ${pathname}`)
+        //console.log(`BOLT Tension => Data ${pathname}`)
         webSocketServer.handleUpgrade(request, socket, head, function done(ws) {
             webSocketServer.emit('connection', ws, request)
         })
