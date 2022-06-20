@@ -4,10 +4,10 @@ import BoltGame, {EVENT_BOLT_ACTIVATED, EVENT_ALL_BOLTS_COMPLETED, EVENT_GAME_CO
 // Settings!
 const TIME_BETWEEN_BOLTS = 600
 
-// port from URL if specified otherwise use default
-const port = new URLSearchParams(window.location.search).get("port") || isElectron() ? 1337 : 5555
 
-console.log("Connecting to port:",port)
+// determine what this is running on and work out the
+// port from URL if specified otherwise use default
+const PORT = new URLSearchParams(window.location.search).get("port") || isElectron() ? 1337 : 5555
 
 const EVENT_ABORT_WAITING = "abort-waiting"
 
@@ -20,7 +20,7 @@ let waiting = false
 let userChoiceInterval = -1
 let controller = new AbortController()
 
-const game = new BoltGame( port )
+const game = new BoltGame( PORT )
 const $home = $(".home")
 const $play = $(".play")
 const $start = $(".start")
@@ -29,7 +29,6 @@ const startScreens = [ $(".htp01"), $(".htp02"), $(".htp03"), $(".htp04") ]
 
 const isNumber = value => !isNaN( parseInt(value) )
 	
-// determine what this is running on...
 const connectToHardware = async () => {
 
   if (connected)
@@ -160,15 +159,6 @@ const resetGame = async (quick=false) => {
   if (!quick)
   {
    // reset gui too
-    // document.querySelectorAll(".bolt").forEach( bolt =>{ 
-    //   bolt.classList.remove("active", "faulty", "normal") 
-    // })
-
-    // document.querySelectorAll(".result").forEach( bolt =>{ 
-    //   bolt.setAttribute("hidden", true)
-    //   bolt.classList.remove("tick", "cross") 
-    // })
-    
     $(".bolt").removeClass("active normal faulty").unbind("click") 
     $(".result").attr("hidden", true).removeClass("tick cross") 
   
@@ -179,13 +169,11 @@ const resetGame = async (quick=false) => {
   }else{
     console.log("Creating Game")
   }
-
   return true
 }
 
-
 /**
- * Wait for a user to press either Faulty or Normal
+ * Wait for a user to press either Faulty or Normal (or cancel - reject)
  */
 const waitForUserChoice = async( signal, timeAllowance=( 1 * 60 * 1000 )) => new Promise( (resolve,reject)=>{
 
@@ -254,11 +242,9 @@ const activateBolt = async ( boltIndex ) => {
 
   waiting = true
 
-  // FIXME: However, once a bolt has been activated the user can return to it
+  // Once a bolt has been activated the user can return to it
   // and reactivate it using the handheld device and change their answer....
   // if it's incorrect (by pressing faulty or normal)
-
-  // clearInterval(userChoiceInterval)
 
   // we clear the automatic bolt selection interval in case one was queued up before
   clearInterval(automaticSelectionInterval)
@@ -273,9 +259,6 @@ const activateBolt = async ( boltIndex ) => {
   const currentChoice = (currentResult.match(/(tick|cross)/)||[])[0]
 
   // remove all other active classes
-  // document.querySelectorAll(".bolt.active").forEach( bolt =>{ 
-  //   bolt.classList.remove("active") 
-  // })
   $(".bolt.active").removeClass("active") 
  
   // now add to the newly active one
@@ -375,18 +358,16 @@ const startGame = async () => {
     activateBolt(boltIndex)
   })
 
-  // aut0 mode
+  // auto mode
   if (!connected && automaticallyShowFirstBolt)
   {
-    console.log("Couldn't connect to Arduino : faking transmissions")
+    console.log("Couldn't connect to Arduino : faking bolt selections")
     // go into fake mode...
     game.startGame()
     pickRandomBolt()
-
-
   }
   
-  console.log( connected ? "Arduino Game Started at" : "Test Game Started at",  new Date(timeStarted) )
+  console.log( connected ? "Arduino Game Started at" : "Test Game Started at",  new Date(timeStarted), `on port ${PORT}`)
  
   $(".game-base").removeAttr("hidden").fadeIn()
 }
@@ -395,7 +376,6 @@ const startGame = async () => {
 // Start here ----- 
 
 // game play interactions
-
 $(".btn-check").on("mousedown", showResults )
 $(".btn-check").on("mouseup", hideResults )
 
@@ -414,13 +394,8 @@ game.on( EVENT_ALL_BOLTS_COMPLETED, () => {
 // User has got all bolts correct!
 game.on( EVENT_GAME_COMPLETED, ({timeElapsed}) => {
 
-   console.log("Game Over! Time taken to complete ", timeElapsed, "ms")
-  
-    // Once all answers are correct a signal is sent via websockets to the reward screen which marks it as complete
-   
-    // TODO:
-    // Once all is complete a ten minute timer starts, giving the user enough time to complete the Moving parts exhibit and then resets (see below)
-
+  console.log("Game Over! Time taken to complete ", timeElapsed, "ms")
+  // Once all answers are correct a signal is sent via websockets to the reward screen which marks it as complete
   // show congratulations screen
   let $wellDone = $(".well-done")
   $wellDone.fadeIn()
@@ -435,7 +410,8 @@ game.on( EVENT_GAME_COMPLETED, ({timeElapsed}) => {
 
 
 window.addEventListener('keydown', event => {
-  if (game.playing && isNumber(event.key)){
+  if (game.playing && isNumber(event.key))
+  {
     activateBolt( parseInt(event.key) - 1 )
   }
 })
@@ -448,3 +424,38 @@ resetGame( true )
 
 // fake home page for first click!
 showHomePage( false )
+
+
+// DEBUGGING - THIS CAN BE REMOVED!
+// ------------------------- >8 -----------------------
+
+if ( new URLSearchParams(window.location.search).has("test") )
+{
+  const tests = document.getElementById("tests")
+  const buttons = tests.querySelectorAll("button")
+
+  // before any button ensure we are connected to arduino!
+  
+  buttons.forEach( button => 
+    button.addEventListener("click", async (event) => {
+     const command =  button.getAttribute("data-command")
+     const args = (button.getAttribute("data-arguments") || '').split(", ")
+    //  console.log("Button", {command, args})
+     const method = game[command]
+    
+     if ( !game.initialise || !game.isArduinoConnected() )
+     {
+      console.log("Arduino is *not* connected yet",{command,args,method}, game[command])
+
+     }else{
+        console.log("Calling arduino",{command,args,method}, game[command])
+
+        await method.apply(args)
+     }
+    
+      //await game.showAttractMode()
+      // await game.turnOffAllLEDs()
+      // await arduino.illuminateLED( boltIndex, LED_STATE_FLASHING )
+    }))
+    tests.removeAttribute("hidden")
+}
