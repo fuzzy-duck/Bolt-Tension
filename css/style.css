@@ -247,6 +247,11 @@ z-index: 99999;
 background: url(../img/well-done.svg);
 }
 
+.btn-normal,
+.btn-faulty{
+    cursor: pointer;
+}
+
 .fade-out{
     animation: Fade 1s linear 0s 1 forwards both;
 }
