@@ -247,6 +247,20 @@ z-index: 99999;
 background: url(../img/well-done.svg);
 }
 
+.fade-out{
+    animation: Fade 1s linear 0s 1 forwards both;
+}
+
+@keyframes Fade {
+    99%{
+        opacity: var(--opacity,0);
+    }
+    100%{
+        opacity: var(--opacity,0);
+        display: none;
+    }
+}
+
 
 #tests{
     position: fixed;
