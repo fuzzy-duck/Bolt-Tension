@@ -2,6 +2,20 @@
  * This is a two part process. 
  * The arduino must send data to the 
  */
+
+/*
+// tell the arduino to do stuff...
+await arduino.illuminateLED(0, LED_STATE_FLASHING)
+await arduino.illuminateLED(1, LED_STATE_WHITE)
+await arduino.illuminateLED(2, LED_STATE_FLASHING)
+await arduino.illuminateLED(3, LED_STATE_WHITE)
+await arduino.illuminateLED(4, LED_STATE_GREEN)
+await arduino.illuminateLED(5, LED_STATE_RED)
+await arduino.illuminateLED(6, LED_STATE_OFF)
+await arduino.illuminateLED(7, LED_STATE_OFF)
+arduino.getLEDStatus(0) // LED_STATE_FLASHING
+*/
+
 import EventManager from './EventManager.js'
 import SerialController from './SerialController.js' 
 

@@ -27,6 +27,10 @@ const $start = $(".start")
 const nextButtons = [ $(".next01"), $(".next02"), $(".next03"), $start ]
 const startScreens = [ $(".htp01"), $(".htp02"), $(".htp03"), $(".htp04") ]
 
+const fadeOut = (element) => {
+  element.classList.toggle('fade-out', true)
+}
+
 const isNumber = value => !isNaN( parseInt(value) )
 	
 const connectToHardware = async () => {
@@ -264,8 +268,7 @@ const activateBolt = async ( boltIndex ) => {
   // now add to the newly active one
   $bolt.removeClass("normal faulty").addClass("active")
 
-  // console.log("Added active class to $("+boltClassName + ")" )
-
+  // TODO: Add video player here
   // play video on the front end (possible 4 faulty videos 8 normal video)
   // console.log("Bolt previously had ["+currentState+"] -> "+currentMode)
   console.log("Playing video file for user to guess if Bolt "+boltClassName+" is faulty or not")
@@ -359,11 +362,12 @@ const startGame = async () => {
   })
 
   // auto mode
-  if (!connected && automaticallyShowFirstBolt)
+  if (automaticallyShowFirstBolt)
   {
     console.log("Couldn't connect to Arduino : faking bolt selections")
     // go into fake mode...
     game.startGame()
+    console.log("Starting Game...")
     pickRandomBolt()
   }
   
@@ -422,8 +426,8 @@ hideHelpScreens()
 // Game Begins
 resetGame( true )
 
-// fake home page for first click!
-showHomePage( false )
+// fake home page for first click only if not in Electron!
+showHomePage( isElectron() ? true : false )
 
 
 // DEBUGGING - THIS CAN BE REMOVED!
@@ -438,24 +442,19 @@ if ( new URLSearchParams(window.location.search).has("test") )
   
   buttons.forEach( button => 
     button.addEventListener("click", async (event) => {
-     const command =  button.getAttribute("data-command")
-     const args = (button.getAttribute("data-arguments") || '').split(", ")
-    //  console.log("Button", {command, args})
-     const method = game[command]
-    
-     if ( !game.initialise || !game.isArduinoConnected() )
-     {
-      console.log("Arduino is *not* connected yet",{command,args,method}, game[command])
-
-     }else{
-        console.log("Calling arduino",{command,args,method}, game[command])
-
-        await method.apply(args)
-     }
-    
-      //await game.showAttractMode()
-      // await game.turnOffAllLEDs()
-      // await arduino.illuminateLED( boltIndex, LED_STATE_FLASHING )
-    }))
-    tests.removeAttribute("hidden")
+    const command =  button.getAttribute("data-command")
+    const args = (button.getAttribute("data-arguments") || '').split(", ").filter( a => a.length > 0 )
+    const method = game[command]
+    if ( !game.initialised || !game.isArduinoConnected() )
+    {
+      console.log("Arduino is *not* connected yet - please inititalise connection first" )
+    }else{
+        console.log("TEST Arduino Command",{command,args})
+        await method.apply(game,args)
+    }
+    // await game.showAttractMode()
+    // await game.turnOffAllLEDs()
+    // await arduino.illuminateLED( boltIndex, LED_STATE_FLASHING )
+  }))
+  tests.removeAttribute("hidden")
 }

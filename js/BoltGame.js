@@ -18,7 +18,7 @@ import BoltManager, {
 
 import Socket, {EVENT_DATA_RECEIVED} from './sockets.js'
 
-const convertLEDStatus = status => {
+export const convertLEDStatus = status => {
     switch(status) {
         case LED_STATE_UNKNOWN: return "LED:Unknown"
         case LED_STATE_FLASHING: return "LED:Flash"
@@ -74,11 +74,18 @@ const sendArduinoStateToServer = (snapshot) => {
     sendJSONToServer( "snapshot", snapshot )
 }
 
+/**
+ * Sends the GAME State to all clients connected by WebSockets
+ * @param {Object} gameState 
+ * @param {Number} activeBolt 
+ */
 const sendGameStateToServer = (gameState, activeBolt) => {
     sendJSONToServer( "game", JSON.stringify({...gameState, activeBolt}) )
 }
 
-
+/**
+ * 
+ */
 export default class BoltGame extends EventManager {
 
     initialised = false
@@ -102,7 +109,7 @@ export default class BoltGame extends EventManager {
     
     /**
      * NB. *must* be called from a USER INTERACTION
-     * @returns 
+     * @returns {Boolean} whether we are connected
      */
     async initialise (){
 
@@ -123,7 +130,7 @@ export default class BoltGame extends EventManager {
             // now watch for when a user interacts with a bolt
             this.arduino.on(EVENT_BOLT_SELECTED, async (boltIndex) => {
                 
-                console.error("BOLT SELECTED", boltIndex )
+                console.error("BOLT SELECTED via Arduino", boltIndex )
                 // user has selected a bolt!
                 // boltIndex or arduino.getActiveBolt() at any time
                 //  const boltUserIsEngagedWith = this.arduino.getActiveBolt()
@@ -140,7 +147,7 @@ export default class BoltGame extends EventManager {
                 this.dispatch( EVENT_BOLT_ACTIVATED, boltIndex )
             })
 
-            console.log("Connected to Arduino!", arduino)
+            console.log("Connected to Arduino!", this.arduino)
 
             // test sending bolt number to all browsers
             // sendDataToServer(202)
@@ -161,7 +168,7 @@ export default class BoltGame extends EventManager {
     }
 
     isArduinoConnected(){
-        this.arduino.connected
+        return this.arduino.connected
     }
     
     /**
@@ -335,8 +342,7 @@ export default class BoltGame extends EventManager {
 
     
     /**
-     * 1 of 8 bolts are randomised on the physical and front end layout 
-     * 3 bolts are faulty, 5 are normal (randomised!)
+     * Set the game state to an initial reset status
      * @param {Boolean} random - should the data be randomised?
      */
     createGameState (random=true) {
@@ -352,31 +358,31 @@ export default class BoltGame extends EventManager {
         }
     }
 
-    /*
-    // tell the arduino to do stuff...
-    await arduino.illuminateLED(0, LED_STATE_FLASHING)
-    await arduino.illuminateLED(1, LED_STATE_WHITE)
-    await arduino.illuminateLED(2, LED_STATE_FLASHING)
-    await arduino.illuminateLED(3, LED_STATE_WHITE)
-    await arduino.illuminateLED(4, LED_STATE_GREEN)
-    await arduino.illuminateLED(5, LED_STATE_RED)
-    await arduino.illuminateLED(6, LED_STATE_OFF)
-    await arduino.illuminateLED(7, LED_STATE_OFF)
-    arduino.getLEDStatus(0) // LED_STATE_FLASHING
-    */
-
+    /**
+     * Send a signal to the Arduino to activate Attract People Mode :)
+     * which turns all LEDs into blinking lights to attract
+     * passers by to engage them into playing (kinda like a screensaver)
+     * @returns 
+     */
     async showAttractMode () {
-        // installation is in Attract People Mode :)
-        // turn all LEDs into blinking lights to attract
-        // passers by the engage (kinda like a screensaver)
         return await this.arduino.setAttractMode()
     }
 
+    /**
+     * Send a signal to the Arduino to turn off ALL LEDs
+     * @returns delayed response
+     */
     async turnOffAllLEDs () {
        return await this.arduino.resetLEDs()
     }
+
+    /**
+     * Illuminate the LED in the museum
+     * @param {Number} boltIndex - index of the LED
+     * @param {Number} LEDStatus - status flag (see top)
+     */
     async illuminateLED (boltIndex, LEDStatus) {
-        await this.arduino.illuminateLED(boltIndex, LEDStatus)
+        return await this.arduino.illuminateLED(boltIndex, LEDStatus)
     }
 
     onGameOver(){
