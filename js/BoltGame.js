@@ -33,9 +33,11 @@ export const EVENT_BOLT_ACTIVATED = "bolt-selected-by-arduino"
 export const EVENT_ALL_BOLTS_COMPLETED = "bolt-all-selected-by-human"
 export const EVENT_GAME_COMPLETED = "bolt-all-correct"
 
+const URL = `${window.location.protocol}//${window.location.hostname}:${window.location.port}`
+
 // to send data from here back to the server..
 const sendDataToServer = async ( path='serial', options={} ) => {
-    const url = `${window.location.protocol}//${window.location.hostname}:${window.location.port}/${path}`
+    const url = `${URL}/${path}`
     const response = await fetch(url, options)
     if (response.ok) 
     { 
@@ -48,6 +50,16 @@ const sendDataToServer = async ( path='serial', options={} ) => {
     }
 }
 
+const sendActiveBolt = async (path, json) => {
+    sendDataToServer( path, {
+        method: 'POST',
+        headers: {
+        'Content-Type': 'application/json;charset=utf-8'
+        },
+        body: json
+    })
+}
+
 const sendJSONToServer = async (path, json) => {
     sendDataToServer( path, {
         method: 'POST',
@@ -58,12 +70,12 @@ const sendJSONToServer = async (path, json) => {
     })
 }
 
-const sendArduinoStateToServer = () => {
-    sendJSONToServer( "snapshot", JSON.stringify(arduino.createSnapshot()) )
+const sendArduinoStateToServer = (snapshot) => {
+    sendJSONToServer( "snapshot", snapshot )
 }
 
-const sendGameStateToServer = (gameState) => {
-    sendJSONToServer( "snapshot", JSON.stringify(gameState) )
+const sendGameStateToServer = (gameState, activeBolt) => {
+    sendJSONToServer( "game", JSON.stringify({...gameState, activeBolt}) )
 }
 
 
@@ -106,11 +118,12 @@ export default class BoltGame extends EventManager {
         {
             // synchronise this browser with the others by sending out the default
             // state right now to the API endpoint in ~Express
-            sendArduinoStateToServer()
+            sendArduinoStateToServer( JSON.stringify(this.arduino.createSnapshot()) )
             
             // now watch for when a user interacts with a bolt
             this.arduino.on(EVENT_BOLT_SELECTED, async (boltIndex) => {
                 
+                console.error("BOLT SELECTED", boltIndex )
                 // user has selected a bolt!
                 // boltIndex or arduino.getActiveBolt() at any time
                 //  const boltUserIsEngagedWith = this.arduino.getActiveBolt()
@@ -127,8 +140,12 @@ export default class BoltGame extends EventManager {
                 this.dispatch( EVENT_BOLT_ACTIVATED, boltIndex )
             })
 
+            console.log("Connected to Arduino!", arduino)
+
             // test sending bolt number to all browsers
             // sendDataToServer(202)
+        }else{
+            console.warn("Connection to Arduino:REFUSED")
         }
         
         // remote data has changed - only use this for the slaves
@@ -141,6 +158,10 @@ export default class BoltGame extends EventManager {
 
         this.initialised = true
         return connectionEstablished
+    }
+
+    isArduinoConnected(){
+        this.arduino.connected
     }
     
     /**
@@ -238,7 +259,7 @@ export default class BoltGame extends EventManager {
     startGame(){
         this.playing = true
         this.timeStarted = Date.now()
-        sendGameStateToServer(this.gameState)
+        sendGameStateToServer(this.gameState, this.activeBolt)
         this.turnOffAllLEDs()
     }
 
@@ -282,7 +303,7 @@ export default class BoltGame extends EventManager {
 
         // activate the LED appropriately
         try{
-            await this.arduino.illuminateLED(boltIndex, LEDStatus)
+            await this.illuminateLED(boltIndex, LEDStatus)
         }catch(error){
             console.warn("ISSUE: Couldn't connect to Arduino to illuminate light "+boltIndex+" to " + convertLEDStatus(LEDStatus) )
         }
@@ -306,6 +327,8 @@ export default class BoltGame extends EventManager {
             // user still working on it...
         }
 
+        this.activeBolt = boltIndex
+
         console.groupEnd()
         return wasUserCorrect
     }
@@ -325,7 +348,7 @@ export default class BoltGame extends EventManager {
             actuallyFaultyBolts[i] = random ? Math.random() < 0.5 ? true : false : false
         }
         return {
-            faultyBoltChoices, actuallyFaultyBolts
+            faultyBoltChoices, actuallyFaultyBolts, activeBolt:this.activeBolt
         }
     }
 
@@ -352,11 +375,14 @@ export default class BoltGame extends EventManager {
     async turnOffAllLEDs () {
        return await this.arduino.resetLEDs()
     }
+    async illuminateLED (boltIndex, LEDStatus) {
+        await this.arduino.illuminateLED(boltIndex, LEDStatus)
+    }
 
     onGameOver(){
         const timeElapsed = Date.now() - this.timeStarted
         this.playing = false
-        sendGameStateToServer( this.gameState )
+        sendGameStateToServer( this.gameState, this.activeBolt )
         this.dispatch(EVENT_GAME_COMPLETED, {timeElapsed})
     }
 }
