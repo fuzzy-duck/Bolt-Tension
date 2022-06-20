@@ -90,25 +90,30 @@ const startServer = (serverPort = 5555, IPAddress='127.0.0.1') => {
     app.get('/serial/:bolt/:result', function(req, res, next){
         
         // you can pass data into it
-        const {bolt, result }= req.params
+        const {bolt, result } = req.params
+       
+
+       
 
         gameState.activeBolt = bolt
-
-        console.log("Data being passed in from arduino", bolt, result )
 
         // check data is valid
         switch(result)
         {
             case "faulty":
+                gameState.faultyBoltChoices[bolt] = true
                 break
-                
+
             case "normal":
+                gameState.faultyBoltChoices[bolt] = false
                 break
         }
 
+        const c = gameState.faultyBoltChoices[bolt]
+        console.log("Data being passed in from arduino", bolt, result, c )
+
         // send out to connected clients
-        sendToAllClients("bolt:"+bolt, true)
-        sendToAllClients("result:"+result, result)
+        sendToAllClients(`bolt:${bolt} result:${result}`, false)
 
         if (bolt) res.send(bolt)
         else next()

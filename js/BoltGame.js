@@ -128,24 +128,7 @@ export default class BoltGame extends EventManager {
             sendArduinoStateToServer( JSON.stringify(this.arduino.createSnapshot()) )
             
             // now watch for when a user interacts with a bolt
-            this.arduino.on(EVENT_BOLT_SELECTED, async (boltIndex) => {
-                
-                console.error("BOLT SELECTED via Arduino", boltIndex )
-                // user has selected a bolt!
-                // boltIndex or arduino.getActiveBolt() at any time
-                //  const boltUserIsEngagedWith = this.arduino.getActiveBolt()
-        
-                this.activeBolt = boltIndex
-
-                // do something with that knowledge
-                sendDataToServer( `serial/${boltIndex}` )
-
-                // set the LED to white or flashing?
-                await arduino.illuminateLED( boltIndex, LED_STATE_FLASHING )
-        
-                // A user has selected a bolt -> dispatch to game?
-                this.dispatch( EVENT_BOLT_ACTIVATED, boltIndex )
-            })
+            this.arduino.on(EVENT_BOLT_SELECTED, this.onArduinoBoltSelected)
 
             console.log("Connected to Arduino!", this.arduino)
 
@@ -157,12 +140,7 @@ export default class BoltGame extends EventManager {
         
         // remote data has changed - only use this for the slaves
         // so that we get data in realtime
-        this.socket.on(EVENT_DATA_RECEIVED, data => {
-            
-            console.log("[Socket] data:", data )
-
-            // 
-        })  
+        this.socket.on(EVENT_DATA_RECEIVED, this.onExternalData )  
 
         this.initialised = true
         return connectionEstablished
@@ -388,6 +366,63 @@ export default class BoltGame extends EventManager {
      */
     async illuminateLED (boltIndex, LEDStatus) {
         return await this.arduino.illuminateLED(boltIndex, LEDStatus)
+    }
+
+
+    async onArduinoBoltSelected(boltIndex){
+                
+        console.log("BOLT SELECTED via Arduino", boltIndex )
+        // user has selected a bolt!
+        // boltIndex or arduino.getActiveBolt() at any time
+        //  const boltUserIsEngagedWith = this.arduino.getActiveBolt()
+
+        this.activeBolt = boltIndex
+
+        // do something with that knowledge
+        sendDataToServer( `serial/${boltIndex}` )
+
+        // set the LED to white or flashing?
+        await arduino.illuminateLED( boltIndex, LED_STATE_FLASHING )
+
+        // FIXME: A user has selected a bolt -> dispatch to game?
+        this.dispatch( EVENT_BOLT_ACTIVATED, boltIndex )
+    }
+
+    onExternalData(data){
+        // check if string...
+        // they are all strings!
+        const isObject = data.charAt(0) === "{" || data.charAt(0) === "["
+        const isString = typeof data === 'string' || data instanceof String
+
+        if (!isObject)
+        {
+            const commands = data.split(" ")
+            commands.forEach( command => {
+
+                const parts = command.split(":")
+                const type = parts[0]
+                const action = parts[1]
+                switch(type)
+                {
+                    case "bolt":
+                        console.log("[Socket] BOLT Selected:", action )
+                        break
+
+                    case "result":
+                        console.log("[Socket] RESULT Selected:", action )
+                        break
+
+                    default: 
+                        console.log("[Socket] UNKNOWN Command:", type, action )
+                }     
+            })
+                
+        }else{
+
+            // This is a JSON object
+            const json = JSON.parse(data)
+            console.log("[Socket] DATA received", json )
+        }
     }
 
     onGameOver(){

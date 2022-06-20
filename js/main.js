@@ -1,5 +1,8 @@
 import {isElectron} from './platform.js'
 import BoltGame, {EVENT_BOLT_ACTIVATED, EVENT_ALL_BOLTS_COMPLETED, EVENT_GAME_COMPLETED} from './BoltGame.js'
+// import gsap from "./gsap.min.js"
+// "../node_modules/gsap/all"
+
 
 // Settings!
 const TIME_BETWEEN_BOLTS = 600
@@ -7,7 +10,7 @@ const TIME_BETWEEN_BOLTS = 600
 
 // determine what this is running on and work out the
 // port from URL if specified otherwise use default
-const PORT = new URLSearchParams(window.location.search).get("port") || isElectron() ? 1337 : 5555
+const PORT = new URLSearchParams(window.location.search).get("port") || (isElectron() ? 1337 : 5555)
 
 const EVENT_ABORT_WAITING = "abort-waiting"
 
