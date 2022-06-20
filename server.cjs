@@ -86,15 +86,42 @@ const startServer = (serverPort = 5555, IPAddress='127.0.0.1') => {
         if (bolt) res.send(bolt)
         else next()
     })
+  
+    app.get('/serial/:bolt/:result', function(req, res, next){
+        
+        // you can pass data into it
+        const {bolt, result }= req.params
 
-      
+        gameState.activeBolt = bolt
+
+        console.log("Data being passed in from arduino", bolt, result )
+
+        // check data is valid
+        switch(result)
+        {
+            case "faulty":
+                break
+                
+            case "normal":
+                break
+        }
+
+        // send out to connected clients
+        sendToAllClients("bolt:"+bolt, true)
+        sendToAllClients("result:"+result, result)
+
+        if (bolt) res.send(bolt)
+        else next()
+    })
+
+    // GET example: http://localhost:3000/game/
     app.get('/game/', (req, res) => {
         //console.log("Data being passed in from arduino")
         res.header("Content-Type",'application/json')
         res.end(JSON.stringify(gameState, null, 3))
     })
 
-    // example: http://localhost:3000/game/
+    // POST example: http://localhost:3000/game/
     app.post('/game/', function(req, res, next){
 
         const snapshot = req.body // || req.params.snapshot
@@ -154,6 +181,7 @@ const startServer = (serverPort = 5555, IPAddress='127.0.0.1') => {
         // console.warn(`http://localhost:${serverPort}`)
     })    
 
+    // create the sockets
     // Proxy websockets through HTTP server
     server.on('upgrade', function upgrade(request, socket, head) {
         const { pathname } = parse(request.url)
@@ -164,10 +192,6 @@ const startServer = (serverPort = 5555, IPAddress='127.0.0.1') => {
         // socket.destroy()
     })
 
-    // create the sockets
-    
-   
-        
     webSocketServer.on('connection', (ws, req) => {
 
         // When the server runs behind a proxy like NGINX, the de-facto standard is to use the X-Forwarded-For header.

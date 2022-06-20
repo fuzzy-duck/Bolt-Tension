@@ -309,7 +309,7 @@ const activateBolt = async ( boltIndex ) => {
       }, TIME_BETWEEN_BOLTS )
 
     }else{
-      console.log("Game complete?", game )
+      console.log("Answers collected! Game complete?", game )
     }
 
   }catch(error){
@@ -340,13 +340,12 @@ const activateBolt = async ( boltIndex ) => {
 
 // End the game (after timeout)
 const endGame = async () => {
-  console.log("Ending game prematureely\n")
+  console.log("Ending game prematurely\n")
   await resetGame()
 }
 
-const pickRandomBolt = async () => {
-  // automaticallyShowFirstBolt
-  return await activateBolt( Math.round(Math.random() * 8) )
+const pickRandomBolt = async (quantity=8) => {
+  return await activateBolt( Math.round(Math.random() * quantity) )
 }
 
 const startGame = async () => {
@@ -380,8 +379,7 @@ const startGame = async () => {
 // Start here ----- 
 
 // game play interactions
-$(".btn-check").on("mousedown", showResults )
-$(".btn-check").on("mouseup", hideResults )
+$(".btn-check").on("mousedown", showResults ).on("mouseup", hideResults )
 
 // Watch for the user bringing the wand to a select a bolt
 game.on( EVENT_BOLT_ACTIVATED, async (boltIndex) => {
@@ -410,8 +408,6 @@ game.on( EVENT_GAME_COMPLETED, ({timeElapsed}) => {
     resetGame()
   })
 })
-
-
 
 window.addEventListener('keydown', event => {
   if (game.playing && isNumber(event.key))

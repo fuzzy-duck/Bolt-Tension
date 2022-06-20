@@ -158,7 +158,8 @@ export default class BoltGame extends EventManager {
         // remote data has changed - only use this for the slaves
         // so that we get data in realtime
         this.socket.on(EVENT_DATA_RECEIVED, data => {
-            //console.log("[Socket] data:", data )
+            
+            console.log("[Socket] data:", data )
 
             // 
         })  
@@ -273,24 +274,25 @@ export default class BoltGame extends EventManager {
     /**
      * Save the answer / choice that the user made into memory and store
      * @param {Number} boltIndex 
-     * @param {Boolean} isFaulty 
+     * @param {Boolean} userChoseFaulty 
      * @returns 
      */
-    async setUserAnswer( boltIndex, isFaulty ){
+    async setUserAnswer( boltIndex, userChoseFaulty ){
 
         const choices = this.gameState.faultyBoltChoices
 
         // now check to see if the bolt was actually faulty!
         const boltFaulty = this.isBoltFaulty(boltIndex)
-        const wasUserCorrect = boltFaulty === isFaulty
+        const wasUserCorrect = boltFaulty === userChoseFaulty
         const hasPreviousAnswer = choices[boltIndex]
+        const userChoice = userChoseFaulty ? 'faulty' : 'normal'
 
-        choices[boltIndex] = isFaulty
+        choices[boltIndex] = userChoseFaulty
 
         // user was incorrect... presumably we change things green / red
         console.group("BOLT SELECTED")
         console.log("Bolt Index #"+boltIndex+" Activated by user")
-        console.log("User guessed " +( isFaulty ? "that it was faulty" : "that is was working" ))
+        console.log("User guessed " +( userChoseFaulty ? "that it was faulty" : "that is was working" ))
         console.log("Bolt is actually " + (boltFaulty ? "faulty" : "working") )
         console.log("User guessed " + (wasUserCorrect ? "correctly :)" : "incorrectly :(") )
         if (hasPreviousAnswer)
@@ -314,7 +316,10 @@ export default class BoltGame extends EventManager {
         }catch(error){
             console.warn("ISSUE: Couldn't connect to Arduino to illuminate light "+boltIndex+" to " + convertLEDStatus(LEDStatus) )
         }
-       
+        
+        // send this to the server
+        sendDataToServer( `serial/${boltIndex}/${userChoice}` )
+
         // check to see if all answers have been given
         let hasUserCompleted = this.haveAllBoltsBeenTested()
            
