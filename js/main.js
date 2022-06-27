@@ -1,5 +1,7 @@
 import {isElectron} from './platform.js'
-import BoltGame, {EVENT_BOLT_ACTIVATED, EVENT_ALL_BOLTS_COMPLETED, EVENT_GAME_COMPLETED} from './BoltGame.js'
+import BoltGame, {
+  EVENT_BOLT_ACTIVATED, EVENT_ALL_BOLTS_COMPLETED, EVENT_GAME_COMPLETED, EVENT_BOLT_EVALUATED
+} from './BoltGame.js'
 // import gsap from "./gsap.min.js"
 // "../node_modules/gsap/all"
 
@@ -14,6 +16,8 @@ const PORT = new URLSearchParams(window.location.search).get("port") || (isElect
 
 const EVENT_ABORT_WAITING = "abort-waiting"
 
+const isSlave = new URLSearchParams(window.location.search).has("slave") || false
+
 let connected = false
 let score = 0
 let automaticSelectionInterval = -1
@@ -23,7 +27,7 @@ let waiting = false
 let userChoiceInterval = -1
 let controller = new AbortController()
 
-const game = new BoltGame( PORT )
+const game = new BoltGame( PORT, isSlave )
 const $home = $(".home")
 const $play = $(".play")
 const $start = $(".start")
@@ -36,7 +40,7 @@ const fadeOut = (element) => {
 
 const isNumber = value => !isNaN( parseInt(value) )
 	
-const connectToHardware = async () => {
+const connectToExternalData = async () => {
 
   if (connected)
   {   
@@ -49,8 +53,8 @@ const connectToHardware = async () => {
     return true
 
   }else{
-    console.log("Attempting to connect to Arduino...")
-    console.warn("Accept the prompt if requested please!")
+    console.log("Attempting to connect to", isSlave ? "WebSockets" : "Arduino..." )
+    if (!isSlave) {console.warn("Accept the prompt if requested please!")}
     connected = await game.initialise()
     return connected
   }
@@ -58,7 +62,7 @@ const connectToHardware = async () => {
 
 
 
-const hideHelpScreens = () => startScreens.forEach( $screen => $screen.hide() )
+const hideHelpScreens = () => startScreens.forEach( $screen => $screen.fadeOut(0) )
 
 // FIXME: Not very performant way of handling this...
 const showResults = () => document.querySelectorAll(".result").forEach( bolt => bolt.removeAttribute("hidden"))
@@ -140,7 +144,7 @@ const showHomePage = ( tryToConnectArduino=true ) =>{
     // This is used to allow the Serial Controller to act in place of the Play button
     document.documentElement.addEventListener( "click", e => {
 
-      connectToHardware()
+      connectToExternalData()
       showHelpPage()
     
     }, { once: true } )
@@ -249,10 +253,6 @@ const activateBolt = async ( boltIndex ) => {
 
   waiting = true
 
-  // Once a bolt has been activated the user can return to it
-  // and reactivate it using the handheld device and change their answer....
-  // if it's incorrect (by pressing faulty or normal)
-
   // we clear the automatic bolt selection interval in case one was queued up before
   clearInterval(automaticSelectionInterval)
  
@@ -262,6 +262,10 @@ const activateBolt = async ( boltIndex ) => {
   const $result = $(".result", $bolt)
   const currentState = $bolt.attr("class") || ''
   const currentResult = $result.attr("class") || ''
+   
+  // Once a bolt has been activated the user can return to it
+  // and reactivate it using the handheld device and change their answer....
+  // if it's incorrect (by pressing faulty or normal)
   const currentMode = (currentState.match(/(faulty|normal)/)||[])[0]
   const currentChoice = (currentResult.match(/(tick|cross)/)||[])[0]
 
@@ -351,30 +355,40 @@ const pickRandomBolt = async (quantity=8) => {
   return await activateBolt( Math.round(Math.random() * quantity) )
 }
 
-const startGame = async () => {
+const startGame = async ( copyMode=false ) => {
 
   timeStarted = Date.now()
+  
+  console.log( copyMode ? "[SLAVE]:Jumping straight into game play" : "[MASTER] Game start")
       
   // Ensure we always start on the HomePage
   hideHelpScreens()
 
-  $(".bolt").on("click", function (event) {
-    const boltIndex = parseInt( event.target.className.match(/(-\d+|\d+)(,\d+)*(\.\d+)*/g)  ) - 1
-    activateBolt(boltIndex)
-  })
+  if (!copyMode)
+  {
+    $(".bolt").on("click", function (event) {
+      const boltIndex = parseInt( event.target.className.match(/(-\d+|\d+)(,\d+)*(\.\d+)*/g)  ) - 1
+      activateBolt(boltIndex)
+    })
+  }
+
+  game.startGame()
 
   // auto mode
-  if (automaticallyShowFirstBolt)
+  if (!copyMode && automaticallyShowFirstBolt)
   {
     console.log("Couldn't connect to Arduino : faking bolt selections")
     // go into fake mode...
-    game.startGame()
-    console.log("Starting Game...")
     pickRandomBolt()
   }
   
-  console.log( connected ? "Arduino Game Started at" : "Test Game Started at",  new Date(timeStarted), `on port ${PORT}`)
- 
+  if (copyMode)
+  {
+    console.log( "Copycat mode",  new Date(timeStarted), `on port ${PORT}`)
+  }else{
+    console.log( connected ? "Arduino Game Started at" : "Test Game Started at",  new Date(timeStarted), `on port ${PORT}`)
+  }
+  
   $(".game-base").removeAttr("hidden").fadeIn()
 }
 
@@ -394,6 +408,11 @@ game.on( EVENT_BOLT_ACTIVATED, async (boltIndex) => {
 // User has interacted with all bolts but there are still issues
 game.on( EVENT_ALL_BOLTS_COMPLETED, () => {
   console.log("Not all of your answers wre correct!")
+})
+
+// User has clicked one of the buttons
+game.on( EVENT_BOLT_EVALUATED, (result) => {
+  console.log("User evaluated bolt", result)
 })
 
 // User has got all bolts correct!
@@ -426,7 +445,18 @@ hideHelpScreens()
 resetGame( true )
 
 // fake home page for first click only if not in Electron!
-showHomePage( isElectron() ? true : false )
+if (isSlave){
+  // gah
+  connectToExternalData()
+  // if this is watching the gameplay - just straight into gameplay
+  startGame( true )
+  // and force hide the help screens
+  hideHelpScreens()
+  hideHomePage()
+}else{
+  showHomePage( isElectron() ? true : false )
+}
+
 
 
 // DEBUGGING - THIS CAN BE REMOVED!

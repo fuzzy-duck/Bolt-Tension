@@ -30,6 +30,7 @@ export const convertLEDStatus = status => {
 }
 
 export const EVENT_BOLT_ACTIVATED = "bolt-selected-by-arduino"
+export const EVENT_BOLT_EVALUATED = "bolt-fault-specified-by-human"
 export const EVENT_ALL_BOLTS_COMPLETED = "bolt-all-selected-by-human"
 export const EVENT_GAME_COMPLETED = "bolt-all-correct"
 
@@ -90,6 +91,8 @@ export default class BoltGame extends EventManager {
 
     initialised = false
     playing = false
+    isSlave = false
+
     activeBolt = -1
     timeStarted = -1
     
@@ -98,9 +101,11 @@ export default class BoltGame extends EventManager {
 
     gameState
 
-    constructor( socketPort=3000, boltQuantity=8 )
+    constructor( socketPort=3000, isSlave=false, boltQuantity=8 )
     {
         super()
+        
+        this.isMaster = !isSlave
         this.boltQuantity = boltQuantity
         this.socket = new Socket( socketPort )
         this.arduino = new BoltManager()
@@ -113,35 +118,46 @@ export default class BoltGame extends EventManager {
      */
     async initialise (){
 
+        console.log("[GAME]initialise")
+
+        let connectionEstablished = false
+
         if (this.initialised) 
         {
             return false
         }
-      
-        // try to connect to the arduino
-        // NB  This *must* be triggered by a user interaction...
-        const connectionEstablished = await this.arduino.connect()
-        if (connectionEstablished)
+
+        if (this.isMaster)
         {
-            // synchronise this browser with the others by sending out the default
-            // state right now to the API endpoint in ~Express
-            sendArduinoStateToServer( JSON.stringify(this.arduino.createSnapshot()) )
+            // try to connect to the arduino
+            // NB  This *must* be triggered by a user interaction...
+            connectionEstablished = await this.arduino.connect()
+            if (connectionEstablished)
+            {
+                // synchronise this browser with the others by sending out the default
+                // state right now to the API endpoint in ~Express
+                sendArduinoStateToServer( JSON.stringify(this.arduino.createSnapshot()) )
+                
+                // now watch for when a user interacts with a bolt
+                this.arduino.on(EVENT_BOLT_SELECTED, boltIndex => this.onArduinoBoltSelected(boltIndex) )
             
-            // now watch for when a user interacts with a bolt
-            this.arduino.on(EVENT_BOLT_SELECTED, this.onArduinoBoltSelected)
+                console.log("Connected to Arduino!", this.arduino)
 
-            console.log("Connected to Arduino!", this.arduino)
+                // test sending bolt number to all browsers
+                // sendDataToServer(202)
+            }else{
+                console.warn("Connection to Arduino:REFUSED")
+            }
 
-            // test sending bolt number to all browsers
-            // sendDataToServer(202)
         }else{
-            console.warn("Connection to Arduino:REFUSED")
+
+            console.log("Slave device detected:Listening for Master!")
+            
+            // remote data has changed - only use this for the slaves
+            // so that we get data in realtime
+            this.socket.on(EVENT_DATA_RECEIVED, data => this.onExternalData(data) )  
         }
         
-        // remote data has changed - only use this for the slaves
-        // so that we get data in realtime
-        this.socket.on(EVENT_DATA_RECEIVED, this.onExternalData )  
-
         this.initialised = true
         return connectionEstablished
     }
@@ -286,7 +302,8 @@ export default class BoltGame extends EventManager {
         // 3 is for a bad bolt (red). 
         // 4 is for off/black (just incase this is ever needed). 
        // const LEDStatus = boltFaulty ? LED_STATE_GREEN : LED_STATE_RED 
-        const LEDStatus = wasUserCorrect ? LED_STATE_GREEN : LED_STATE_RED 
+       // const LEDStatus = wasUserCorrect ? LED_STATE_GREEN : LED_STATE_RED 
+        const LEDStatus = userChoseFaulty ? LED_STATE_RED :LED_STATE_GREEN
 
         // activate the LED appropriately
         try{
@@ -356,7 +373,7 @@ export default class BoltGame extends EventManager {
      * @returns delayed response
      */
     async turnOffAllLEDs () {
-       return await this.arduino.resetLEDs()
+       return this.isMaster ? await this.arduino.resetLEDs() : false
     }
 
     /**
@@ -365,12 +382,12 @@ export default class BoltGame extends EventManager {
      * @param {Number} LEDStatus - status flag (see top)
      */
     async illuminateLED (boltIndex, LEDStatus) {
-        return await this.arduino.illuminateLED(boltIndex, LEDStatus)
+        return this.isMaster ? await this.arduino.illuminateLED(boltIndex, LEDStatus) : false
     }
 
 
     async onArduinoBoltSelected(boltIndex){
-                
+    
         console.log("BOLT SELECTED via Arduino", boltIndex )
         // user has selected a bolt!
         // boltIndex or arduino.getActiveBolt() at any time
@@ -389,6 +406,13 @@ export default class BoltGame extends EventManager {
     }
 
     onExternalData(data){
+
+        // we don't care about information from ourselves
+        if (this.isMaster)
+        {
+            return 
+        }
+
         // check if string...
         // they are all strings!
         const isObject = data.charAt(0) === "{" || data.charAt(0) === "["
@@ -406,16 +430,22 @@ export default class BoltGame extends EventManager {
                 {
                     case "bolt":
                         console.log("[Socket] BOLT Selected:", action )
+                        this.dispatch( EVENT_BOLT_ACTIVATED, action )
                         break
 
                     case "result":
                         console.log("[Socket] RESULT Selected:", action )
+                        this.dispatch( EVENT_BOLT_EVALUATED, action )
                         break
 
                     default: 
                         console.log("[Socket] UNKNOWN Command:", type, action )
                 }     
+
+                // this.dispatch( EVENT_BOLT_ACTIVATED, boltIndex )
             })
+
+            // here we fake some 
                 
         }else{
 
