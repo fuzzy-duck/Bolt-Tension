@@ -9,7 +9,6 @@ void setup() {
 
 void loop() {
   static uint32_t ledUpdate, fakeSignalUpdate;
-  statusLed.Update();
   
   UpdateGlobalLedVariables();
   ProcessSerialMessages();

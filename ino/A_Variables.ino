@@ -1,4 +1,4 @@
-#include "AivafMasterFirmware.h"
+#include "FastLED.h"
 
 #define STATUS_LED 13
 
@@ -23,7 +23,6 @@ char processMsgBuffer[30];
 
 enum GameMode {attractor, intro1, intro2, intro3, } gameMode;
 
-STA_StatusLED statusLed(STATUS_LED);
 CRGB leds[NUM_LEDS];
 
 int globalFadeVal, globalLedIndex;
