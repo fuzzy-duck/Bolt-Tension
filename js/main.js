@@ -5,6 +5,20 @@ import BoltGame, {
 // import gsap from "./gsap.min.js"
 // "../node_modules/gsap/all"
 
+import BoltManager, {
+  EVENT_BOLT_SELECTED,
+  LED_STATE_UNKNOWN,
+  LED_STATE_FLASHING,
+  LED_STATE_WHITE,
+  LED_STATE_GREEN,
+  LED_STATE_RED,
+  LED_STATE_OFF
+} from './BoltManager.js'
+
+import {
+  getWorkingVideo, 
+  getFaultyVideo
+} from './videos.js'
 
 // Settings!
 const TIME_BETWEEN_BOLTS = 600
@@ -26,13 +40,18 @@ let automaticallyShowFirstBolt = true
 let waiting = false
 let userChoiceInterval = -1
 let controller = new AbortController()
-
 const game = new BoltGame( PORT, isSlave )
+
 const $home = $(".home")
 const $play = $(".play")
 const $start = $(".start")
+const $wellDone = $(".well-done")
+
 const nextButtons = [ $(".next01"), $(".next02"), $(".next03"), $start ]
 const startScreens = [ $(".htp01"), $(".htp02"), $(".htp03"), $(".htp04") ]
+const video = document.querySelector("video.bolt-fault-check-video")
+const source = video.querySelector("source")
+
 
 const fadeOut = (element) => {
   element.classList.toggle('fade-out', true)
@@ -68,6 +87,14 @@ const hideHelpScreens = () => startScreens.forEach( $screen => $screen.fadeOut(0
 const showResults = () => document.querySelectorAll(".result").forEach( bolt => bolt.removeAttribute("hidden"))
 const hideResults = () => document.querySelectorAll(".result").forEach( bolt => bolt.setAttribute("hidden", true))
 
+const showWellDoneScreen = () => {
+  $wellDone.fadeIn()
+  $wellDone.on("click", function(){
+    $wellDone.unbind()
+    $wellDone.fadeOut()
+    resetGame()
+  })
+}
 
 const hideHomePage = () =>{ 
   console.log("Hiding Welcome Screen")
@@ -176,11 +203,28 @@ const resetGame = async (quick=false) => {
     game.resetGame()
     console.log("Resetting Game")
     showHomePage()
-
+    video.pause()
+  
   }else{
     console.log("Creating Game")
   }
+  video.setAttribute("hidden", true)
   return true
+}
+
+/**
+ * set the onscreen video to either faulty or not
+ * @param {*} isFaulty 
+ */
+const setVideo = ( isFaulty=false ) => {
+ // find video element and change source
+  const videoSource = isFaulty ? getWorkingVideo() : getFaultyVideo()
+  source.setAttribute( "src", "videos/" + videoSource)
+  //source.setAttribute( "data-faulty", isFaulty)
+  video.load()
+  video.removeAttribute("hidden")
+  video.play()
+  return videoSource
 }
 
 /**
@@ -204,6 +248,7 @@ const waitForUserChoice = async( signal, timeAllowance=( 1 * 60 * 1000 )) => new
 		cancel(new DOMException('Aborted', EVENT_ABORT_WAITING))
 	}
 
+  
   console.log("Waiting for user to select faulty or normal")
   
   userChoiceInterval = setTimeout(()=>{
@@ -227,13 +272,20 @@ const waitForUserChoice = async( signal, timeAllowance=( 1 * 60 * 1000 )) => new
 })
  
 
+const pauseUntilBoltSelectedOrTimeout = async ( timeOut=TIME_BETWEEN_BOLTS ) => {
+  // we could await this but want is async
+  // const arduinoState = this.arduino.waitForUserToSelectBolt()
+  automaticSelectionInterval = setTimeout( ()=>{ 
+
+    const nextUnplayedBolt = game.getRandomBoltIndexWithNoSelection()
+    activateBolt( nextUnplayedBolt )
+  }, timeOut )
+}
+
 const activateBolt = async ( boltIndex ) => {
 
   // kill any previous promises!
   controller.abort()
-
-  // create new signal
-  controller = new AbortController()
 
   if (isNaN(boltIndex)){
     throw Error("This is not a boltIndex! : "+boltIndex)
@@ -245,6 +297,9 @@ const activateBolt = async ( boltIndex ) => {
     return
   }
 
+  // create new signal
+  controller = new AbortController()
+
   if (waiting)
   {
     // hmm we are trying to activate a bolt while one is still activating...
@@ -255,6 +310,10 @@ const activateBolt = async ( boltIndex ) => {
 
   // we clear the automatic bolt selection interval in case one was queued up before
   clearInterval(automaticSelectionInterval)
+
+  // we also synchronously await for user to select a bolt
+  // NB. this will get interupted when we send out data
+  const arduinoState = game.waitForUserToSelectBolt()
  
   const boltNumber = boltIndex + 1
   const boltClassName = ".bolt0" + boltNumber
@@ -275,19 +334,29 @@ const activateBolt = async ( boltIndex ) => {
   // now add to the newly active one
   $bolt.removeClass("normal faulty").addClass("active")
 
-  // TODO: Add video player here
   // play video on the front end (possible 4 faulty videos 8 normal video)
   // console.log("Bolt previously had ["+currentState+"] -> "+currentMode)
-  console.log("Playing video file for user to guess if Bolt "+boltClassName+" is faulty or not")
-
+  const video = setVideo( game.isBoltFaulty(boltIndex) )
+  console.log("Playing video file for user to guess if Bolt "+boltClassName+" is faulty or not", video )
+  
   // Pause if we would like one :)
   // await new Promise(resolve => setTimeout(resolve, 200 ))
-  
+
+  // activate the LED so that it indicates which bolt is active
+  // by setting it to flashing mode
+  try{
+    // illuminate it in whichever style we want it
+    await game.illuminateLED( boltIndex, LED_STATE_FLASHING )
+  }catch(error){
+      console.warn("ISSUE: Couldn't connect to Arduino to illuminate light "+boltIndex+" to " + convertLEDStatus(LEDStatus) )
+  }
+
   // The user decides if it is faulty or normal by pressing the front end buttons
   // The user now decides if it is faulty or normal by pressing the front end buttons
   // wait for faulty or none faulty buttons
   try{
 
+    // wait for user to select an answer
     const userThinksItIsFaulty = await waitForUserChoice( controller.signal )
     
     // now check the answer is correct
@@ -309,14 +378,13 @@ const activateBolt = async ( boltIndex ) => {
 
     if ( !game.haveAllBoltsBeenTested() )
     {
-      // After pressing faulty or normal another bolt is randomised and the process continues 
-      automaticSelectionInterval = setTimeout( ()=>{ 
-        const nextUnplayedBolt = game.getRandomBoltIndexWithNoSelection()
-        activateBolt( nextUnplayedBolt )
-      }, TIME_BETWEEN_BOLTS )
-
+      // After pressing faulty or normal another bolt
+      // is randomised and the process continues that is 
+      // UNLESS the user hasn't interacted with the arduino
+      await pauseUntilBoltSelectedOrTimeout()
     }else{
-      console.log("Answers collected! Game complete?", game )
+      // WHAT TO DO HERE! 
+      console.log("Answers collected!", game.areAllAnswersCorrect() ? " - all bolts correctly labelled!" : "some bolts are wrong!\nUse the check button to see which ones" )
     }
 
   }catch(error){
@@ -329,15 +397,25 @@ const activateBolt = async ( boltIndex ) => {
       // out of date
       if (currentMode && currentChoice)
       {
-        console.log("Reverting to previous known state ", currentMode, currentChoice )
+        console.log("Reverting to previous known state ", {currentMode, currentChoice} )
         $bolt.addClass(currentMode)
         $result.addClass(currentChoice)
+        await game.illuminateLED( boltIndex, currentMode === "faulty" ? LED_STATE_RED : LED_STATE_GREEN )
+
       }else{
+
+        // turn "off" the light (turn it back to white)
+        console.log("Turning off the light as deselected without result", {currentMode, currentChoice} )
+        // NB. Reset state is white!
+        // await game.illuminateLED( boltIndex, LED_STATE_OFF )
+        await game.illuminateLED( boltIndex, LED_STATE_WHITE )
         console.log(error.message)
       }
       
     }else{
-      // timeout 
+
+      // timeout ?
+      console.log("Fatal error causing me to endgame : ", error )
       endGame()
     }
   }
@@ -347,12 +425,12 @@ const activateBolt = async ( boltIndex ) => {
 
 // End the game (after timeout)
 const endGame = async () => {
-  console.log("Ending game prematurely\n")
+  console.warn("Ending game prematurely\n")
   await resetGame()
 }
 
 const pickRandomBolt = async (quantity=8) => {
-  return await activateBolt( Math.round(Math.random() * quantity) )
+  return await activateBolt( Math.floor(Math.random() * quantity) )
 }
 
 const startGame = async ( copyMode=false ) => {
@@ -377,7 +455,7 @@ const startGame = async ( copyMode=false ) => {
   // auto mode
   if (!copyMode && automaticallyShowFirstBolt)
   {
-    console.log("Couldn't connect to Arduino : faking bolt selections")
+    console.log("Picking random bolt selections due to setting automaticallyShowFirstBolt=true")
     // go into fake mode...
     pickRandomBolt()
   }
@@ -399,10 +477,10 @@ const startGame = async ( copyMode=false ) => {
 $(".btn-check").on("mousedown", showResults ).on("mouseup", hideResults )
 
 // Watch for the user bringing the wand to a select a bolt
-game.on( EVENT_BOLT_ACTIVATED, async (boltIndex) => {
+game.on( EVENT_BOLT_ACTIVATED, (boltIndex) => {
   // The user used the handheld device to select a bolt 
   console.log("Bolt activated by user", boltIndex)
-  await activateBolt(boltIndex)
+  activateBolt(boltIndex)
 })
 
 // User has interacted with all bolts but there are still issues
@@ -421,14 +499,7 @@ game.on( EVENT_GAME_COMPLETED, ({timeElapsed}) => {
   console.log("Game Over! Time taken to complete ", timeElapsed, "ms")
   // Once all answers are correct a signal is sent via websockets to the reward screen which marks it as complete
   // show congratulations screen
-  let $wellDone = $(".well-done")
-  $wellDone.fadeIn()
-  $wellDone.on("click", function(){
-    $wellDone.unbind()
-    $wellDone.fadeOut()
-    $wellDone = null
-    resetGame()
-  })
+  showWellDoneScreen()
 })
 
 window.addEventListener('keydown', event => {
@@ -444,16 +515,23 @@ hideHelpScreens()
 // Game Begins
 resetGame( true )
 
+
+
+
 // fake home page for first click only if not in Electron!
-if (isSlave){
-  // gah
+if (isSlave)
+{
+  // only connect to websockets
   connectToExternalData()
-  // if this is watching the gameplay - just straight into gameplay
+  // jump straight into gameplay
   startGame( true )
   // and force hide the help screens
   hideHelpScreens()
   hideHomePage()
+  // now wait for websockets to guide the game...
+
 }else{
+
   showHomePage( isElectron() ? true : false )
 }
 
@@ -470,7 +548,7 @@ if ( new URLSearchParams(window.location.search).has("test") )
   // before any button ensure we are connected to arduino!
   
   buttons.forEach( button => 
-    button.addEventListener("click", async (event) => {
+  button.addEventListener("click", async (event) => {
     const command =  button.getAttribute("data-command")
     const args = (button.getAttribute("data-arguments") || '').split(", ").filter( a => a.length > 0 )
     const method = game[command]
@@ -478,12 +556,12 @@ if ( new URLSearchParams(window.location.search).has("test") )
     {
       console.log("Arduino is *not* connected yet - please inititalise connection first" )
     }else{
-        console.log("TEST Arduino Command",{command,args})
-        await method.apply(game,args)
+      console.log("TEST Arduino Command",{command,args})
+      await method.apply(game,args)
     }
     // await game.showAttractMode()
     // await game.turnOffAllLEDs()
-    // await arduino.illuminateLED( boltIndex, LED_STATE_FLASHING )
+    // await game.illuminateLED( boltIndex, LED_STATE_FLASHING )
   }))
   tests.removeAttribute("hidden")
 }
