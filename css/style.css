@@ -236,7 +236,16 @@ pointer-events: none;
 .ignore {
 pointer-events: none;
 }
-
+.bolt-fault-check-video{
+    position: absolute;
+    top:0;
+    left:0;
+    z-index:9;
+    height: auto;
+    width: 66%;
+    top: 129px;
+    left: 202px;
+}
 .well-done {
 width: 1920px;
 height: 1080px;
