@@ -7,7 +7,7 @@
   "main": "main.cjs",
   "scripts": {
     "build": "electron .",
-    "start": "node ./web.js"
+    "start": "node ./web.mjs"
   },
   "repository": "https://github.com/fuzzy-duck/Bolt-Tension",
   "keywords": [],

@@ -23,8 +23,7 @@ let gameState = {
     faultyBoltChoices:new Array(BOLT_QUANTITY).fill(null),
     actuallyFaultyBolts:new Array(BOLT_QUANTITY).fill(null)
 }
-
-const startServer = (serverPort = 5555, IPAddress='127.0.0.1') => {
+const startServer = (serverPort = 5555, IPAddress='127.0.0.1') => new Promise((resolve,reject) => {
 
     //initialize the Static & WebSocket server instance
     const app = Express()
@@ -184,6 +183,7 @@ const startServer = (serverPort = 5555, IPAddress='127.0.0.1') => {
         console.log(`WebSockets API INTERNAL => ws://${url}:${serverPort}/ ^ Requires ^`)
         console.log(`WebSockets API EXTERNAL => ws://${ip}:${serverPort}/ ^ Requires ^`)
         // console.warn(`http://localhost:${serverPort}`)
+        resolve(`http://${url}:${serverPort}`)
     })    
 
     // create the sockets
@@ -272,10 +272,8 @@ const startServer = (serverPort = 5555, IPAddress='127.0.0.1') => {
         })
     }, PING_TEST_TIME)
     */
-}
+})
 
 
-
-module.exports = {
-    startServer
-}
+// export default startServer
+module.exports = startServer
