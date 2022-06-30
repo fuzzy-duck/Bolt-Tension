@@ -9,7 +9,7 @@ const VIDEOS = [
     "bolt_tension_-_waveform-08 (Original).mp4",
     "faulty/bolt_tension_-_waveform-09 (Original).mp4",
     "faulty/bolt_tension_-_waveform-10 (Original).mp4",
-    "bolt_tension_-_waveform-11 (Original).mp4",
+    "faulty/bolt_tension_-_waveform-11 (Original).mp4",
     "faulty/bolt_tension_-_waveform-12 (Original).mp4"
 ]
 

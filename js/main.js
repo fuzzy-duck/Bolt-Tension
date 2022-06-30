@@ -218,7 +218,7 @@ const resetGame = async (quick=false) => {
  */
 const setVideo = ( isFaulty=false ) => {
  // find video element and change source
-  const videoSource = isFaulty ? getWorkingVideo() : getFaultyVideo()
+  const videoSource = isFaulty ?  getFaultyVideo() : getWorkingVideo()
   source.setAttribute( "src", "videos/" + videoSource)
   //source.setAttribute( "data-faulty", isFaulty)
   video.load()
