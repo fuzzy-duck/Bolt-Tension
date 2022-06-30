@@ -34,7 +34,17 @@ class LineBreakTransformer {
  */
 export default class SerialController {
     
+    isReading = false
     isWriting = false
+    isContinuouslyReading = false
+
+    get isAvailable(){
+        return 'serial' in navigator
+    }
+
+    get isConnected(){
+        return this.port && ( this.port.readable ||  this.port.writable )
+    }
 
     constructor() {
         this.encoder = new TextEncoder()
@@ -43,9 +53,9 @@ export default class SerialController {
     } 
   
     async init() {
-        if ('serial' in navigator) {
+        if (this.isAvailable) {
             try {
-                const port = await navigator.serial.requestPort();
+                const port = await navigator.serial.requestPort()
                 await port.open({ 
 
                     // A positive, non-zero value indicating the baud rate 
@@ -102,6 +112,13 @@ export default class SerialController {
         }
     }
 
+    // once reading has completed, you will want to release the read lock
+    unlock(){
+        console.error("SERIAL port Unlocked")
+        this.reader.releaseLock()
+        this.isReading = false
+    }
+
     async write(data) {
         if (!this.writer){
             return
@@ -110,7 +127,7 @@ export default class SerialController {
         this.isWriting = true
         const dataArrayBuffer = this.encoder.encode(data)
         const output = await this.writer.write(dataArrayBuffer)
-        this.isWriting = false
+        this.onWritingCompleted()
         return output
     }
 
@@ -127,15 +144,35 @@ export default class SerialController {
     }
 
     /**
+     * This forces a re-read once writing has completed...
+     */
+    continuouslyRead( callback ){
+        this.isContinuouslyReading = true
+        this.continuousCallback = callback
+        // commence reading
+        if (!this.isReading)
+        {
+            readCommands( callback )
+        }
+    }
+
+    /**
      * read data from web serial port in chunks
      * and reassemble it into a valid data string
      * @returns {string} data / error ,essage
      */
     async readCommands( callback ) {
-        const commands = [];
+      
+        if (!this.port || !this.port.readable)
+        {
+            console.warn("SerialController.readCommands() Failed : Port not readable" )
+            return
+        }
 
-        console.log("SerialController.readCommands(). Port readable?", this.port.readable )
-   
+        const commands = []
+        
+        this.isReading = true
+        
         // pause the whole operation until the port is readable
         while ( this.port.readable ) {
             
@@ -148,9 +185,7 @@ export default class SerialController {
                     const { value, done } = await this.reader.read()
                     
                     if (done) {
-                        // console.error("SERIAL DONE");
-                        // Allow the serial port to be closed later.
-                        this.reader.releaseLock()
+                        this.unlock()
                         // exit these loops
                         break
                     }
@@ -166,6 +201,7 @@ export default class SerialController {
                 }
 
             } catch (error) {
+
                 // Handle non-fatal read error.  
                 const errorMessage = `error reading data: ${error}`
                 console.error(errorMessage)
@@ -174,11 +210,20 @@ export default class SerialController {
                 // the loop repeating
                 // throw Error(error);
                 return errorMessage
+
+            } finally {
+                this.unlock()
             }
         }
+    }
 
-        // console.log({rawData, cleanData});
-
-        return rawData // cleanData
+    // writing has completed
+    onWritingCompleted(){
+        this.isWriting = false
+        if (this.isContinuouslyReading && !this.isReading)
+        {
+            // if we want to start reading again...
+            readCommands(this.continuousCallback)
+        }
     }
 }
