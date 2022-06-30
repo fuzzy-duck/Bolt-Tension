@@ -65,6 +65,14 @@ export default class BoltManager extends EventManager {
         this.leds = new Array(ledQuantity).fill(LED_STATE_UNKNOWN)
     }
 
+    monitorBolts(){
+        this.serialController.continuouslyRead()
+    }
+
+    stopMonitoringBolts(){
+        this.serialController.cancelContinuousRead()
+    }
+
     /**
      * get the bolt that the user is currently engaging with
      * @param {number} index - integer position of the switch
@@ -291,23 +299,23 @@ export default class BoltManager extends EventManager {
      * @param {Function} callback - callback to run on data
      * @returns 
      */
-    async fetchData( requestedCommand, callback ){
+    // async fetchData( requestedCommand, callback ){
 
-        if (requestedCommand)
-        {
-            await this.sendData(requestedCommand)
-        }
+    //     if (requestedCommand)
+    //     {
+    //         await this.sendData(requestedCommand)
+    //     }
         
-        // returns a long string of data but it may be cut off
-        const data = await this.serialController.readCommands( (commandData)=>{
-            const command = this.parseCommand(commandData)
-            command && callback && callback(command)
-        })
+    //     // returns a long string of data but it may be cut off
+    //     const data = await this.serialController.readCommands( (commandData)=>{
+    //         const command = this.parseCommand(commandData)
+    //         command && callback && callback(command)
+    //     })
 
-        this.parseData(data)
-        // update state...
-        return this.createSnapshot()
-    }
+    //     this.parseData(data)
+    //     // update state...
+    //     return this.createSnapshot()
+    // }
 
     /**
      * NB. This halts all reads until it completes

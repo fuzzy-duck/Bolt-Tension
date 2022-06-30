@@ -186,6 +186,9 @@ const showHomePage = ( tryToConnectArduino=true ) =>{
  */
 const resetGame = async (quick=false) => {
   
+  // stop waiting for bolts
+  // game.stopMonitoringBolts()
+
   // put arduino into Attract Mode
   await game.showAttractMode()
 
@@ -312,7 +315,7 @@ const activateBolt = async ( boltIndex ) => {
 
   // we also synchronously await for user to select a bolt
   // NB. this will get interupted when we send out data
-  const arduinoState = game.waitForUserToSelectBolt()
+ // const arduinoState = game.waitForUserToSelectBolt()
  
   const boltNumber = boltIndex + 1
   const boltClassName = ".bolt0" + boltNumber
@@ -443,6 +446,7 @@ const startGame = async ( copyMode=false ) => {
 
   if (!copyMode)
   {
+    // game.monitorBolts()
     $(".bolt").on("click", function (event) {
       const boltIndex = parseInt( event.target.className.match(/(-\d+|\d+)(,\d+)*(\.\d+)*/g)  ) - 1
       activateBolt(boltIndex)

@@ -129,6 +129,7 @@ export default class SerialController {
         this.isWriting = true
         const dataArrayBuffer = this.encoder.encode(data)
         const output = await this.writer.write(dataArrayBuffer)
+        console.log("Serial WRITE : ", data )
         this.onWritingCompleted()
         return output
     }
@@ -154,8 +155,17 @@ export default class SerialController {
         // commence reading
         if (!this.isReading)
         {
-            readCommands( callback )
+            console.log("Attempting to monitor Serial bus reads")
+            this.readCommands( this.continuousCallback )
+        }else{
+            console.log("Tried to read Serial but serial port is busy reading")
         }
+    }
+
+    cancelContinuousRead(){
+        this.isContinuouslyReading = false
+        this.continuousCallback = null
+        this.abortController.abort()
     }
 
     /**
@@ -178,21 +188,22 @@ export default class SerialController {
         // allow us to cancel it if needed
         this.abortController = new AbortController()
         
+        const signal = this.abortController.signal
         // allow us to exit prematurely
-        this.abortController.signal.addEventListener('abort', () => {
+        signal.addEventListener('abort', () => {
             // This wait was interupted by the user selecting another bolt
             // before making a decision about the previous bolt
             cancelling = true
         })
 
         // pause the whole operation until the port is readable
-        while ( this.port.readable && !cancelling ) {
+        while ( this.port.readable && !signal.aborted && !cancelling ) {
             
             try {
                 // pause the operation again until the "done" signal is received
                 // this may take many loops but eventually the arduino will proclaim
                 // the the next byte will be the last byte of the data and it will be "done"
-                while (!cancelling) {
+                while (!signal.aborted && !cancelling) {
 
                     const { value, done } = await this.reader.read()
                     
@@ -205,6 +216,8 @@ export default class SerialController {
                     // concantenate the data into one longer string
                     if (value) 
                     {
+                        console.log("Serial RECEIVED COMMAND : ", value )
+        
                         commands.push( value )
                  
                         // send only last packet
@@ -236,11 +249,15 @@ export default class SerialController {
 
     // writing has completed
     onWritingCompleted(){
+        
         this.isWriting = false
-        if (this.isContinuouslyReading && !this.isReading)
+        if (this.isContinuouslyReading)
         {
+            console.log("Serial WRITE complete - now remonitoring read...",  {isReading:this.isReading} )
             // if we want to start reading again...
-            readCommands(this.continuousCallback)
+            this.readCommands(this.continuousCallback)
+        }else{
+            console.log("Serial WRITE completed",  {isReading:this.isReading} )
         }
     }
 }
