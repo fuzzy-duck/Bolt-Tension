@@ -196,8 +196,11 @@ export default class SerialController {
             cancelling = true
         })
 
+        console.log("Serial readCommands", this.port.readable, this.port, {cancelling, aborted:signal.aborted} )
+
         // pause the whole operation until the port is readable
         while ( this.port.readable && !signal.aborted && !cancelling ) {
+            
             
             try {
                 // pause the operation again until the "done" signal is received
@@ -208,6 +211,7 @@ export default class SerialController {
                     const { value, done } = await this.reader.read()
                     
                     if (done) {
+                        console.log("Cancelled Serial read completed (arduino sent complete bit)")
                         this.unlock()
                         // exit these loops
                         break
@@ -222,6 +226,8 @@ export default class SerialController {
                  
                         // send only last packet
                         callback && callback(value)
+                    }else{
+                        console.log("Serial RECEIVED EMPTINESS : ", value )
                     }
                 }
 
