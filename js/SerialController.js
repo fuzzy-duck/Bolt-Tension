@@ -89,6 +89,8 @@ export default class SerialController {
                 this.writer = port.writable.getWriter()
                 this.port = port
 
+                
+
                 // these are useful to connect to if multiple devices are connected
                 // as you can target them directly by id on refresh :)
                 const { usbProductId, usbVendorId } = port.getInfo()
@@ -170,17 +172,27 @@ export default class SerialController {
         }
 
         const commands = []
+        let cancelling = false
         
         this.isReading = true
+        // allow us to cancel it if needed
+        this.abortController = new AbortController()
         
+        // allow us to exit prematurely
+        this.abortController.signal.addEventListener('abort', () => {
+            // This wait was interupted by the user selecting another bolt
+            // before making a decision about the previous bolt
+            cancelling = true
+        })
+
         // pause the whole operation until the port is readable
-        while ( this.port.readable ) {
+        while ( this.port.readable && !cancelling ) {
             
             try {
                 // pause the operation again until the "done" signal is received
                 // this may take many loops but eventually the arduino will proclaim
                 // the the next byte will be the last byte of the data and it will be "done"
-                while (true) {
+                while (!cancelling) {
 
                     const { value, done } = await this.reader.read()
                     
@@ -214,6 +226,11 @@ export default class SerialController {
             } finally {
                 this.unlock()
             }
+        }
+
+        if (cancelling){
+            console.log("Cancelled Serial reading!")
+            this.unlock()
         }
     }
 
