@@ -247,7 +247,7 @@ export default class BoltManager extends EventManager {
      * 4 is for off/black (just incase this is ever needed).
      */
     async illuminateLED( index=0, state=1 ){
-        if (state >= 0 && state <= 4)
+        if (state >= LED_STATE_FLASHING && state <= LED_STATE_OFF)
         {
             return this.sendData(`L ${index} ${state}`)
         }
@@ -293,8 +293,11 @@ export default class BoltManager extends EventManager {
      */
     async fetchData( requestedCommand, callback ){
 
-        await this.sendData(requestedCommand)
-       
+        if (requestedCommand)
+        {
+            await this.sendData(requestedCommand)
+        }
+        
         // returns a long string of data but it may be cut off
         const data = await this.serialController.readCommands( (commandData)=>{
             const command = this.parseCommand(commandData)
@@ -304,6 +307,17 @@ export default class BoltManager extends EventManager {
         this.parseData(data)
         // update state...
         return this.createSnapshot()
+    }
+
+    /**
+     * NB. This halts all reads until it completes
+     */
+    async waitForUserToSelectBolt(){
+        const data = await this.serialController.readCommands( (commandData)=>{
+            const command = this.parseCommand(commandData)
+            command && callback && callback(command) 
+            return this.parseData(data)
+        })
     }
 
     /**

@@ -141,7 +141,7 @@ export default class BoltGame extends EventManager {
                 // now watch for when a user interacts with a bolt
                 this.arduino.on(EVENT_BOLT_SELECTED, boltIndex => this.onArduinoBoltSelected(boltIndex) )
             
-                console.log("Connected to Arduino!", this.arduino)
+                console.log("Listening to Arduino!", this.arduino, {arduinoState})
 
                 // test sending bolt number to all browsers
                 // sendDataToServer(202)
@@ -372,6 +372,13 @@ export default class BoltGame extends EventManager {
      * Send a signal to the Arduino to turn off ALL LEDs
      * @returns delayed response
      */
+    async waitForUserToSelectBolt () {
+       return this.isMaster ? await this.arduino.waitForUserToSelectBolt() : false
+    }
+    /**
+     * Send a signal to the Arduino to turn off ALL LEDs
+     * @returns delayed response
+     */
     async turnOffAllLEDs () {
        return this.isMaster ? await this.arduino.resetLEDs() : false
     }
@@ -399,7 +406,8 @@ export default class BoltGame extends EventManager {
         sendDataToServer( `serial/${boltIndex}` )
 
         // set the LED to white or flashing?
-        await arduino.illuminateLED( boltIndex, LED_STATE_FLASHING )
+        // This get's called by boltActivated in main
+        // await arduino.illuminateLED( boltIndex, LED_STATE_FLASHING )
 
         // FIXME: A user has selected a bolt -> dispatch to game?
         this.dispatch( EVENT_BOLT_ACTIVATED, boltIndex )
