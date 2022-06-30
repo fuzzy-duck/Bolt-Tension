@@ -315,9 +315,9 @@ export default class BoltManager extends EventManager {
     async waitForUserToSelectBolt(){
         const data = await this.serialController.readCommands( (commandData)=>{
             const command = this.parseCommand(commandData)
-            command && callback && callback(command) 
-            return this.parseData(data)
-        })
+            command && callback && callback(command)   
+        }) 
+        return this.parseData(data)
     }
 
     /**
