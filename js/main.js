@@ -21,14 +21,14 @@ import {
 } from './videos.js'
 
 // Settings!
-const TIME_BETWEEN_BOLTS = 600
+const TIME_BETWEEN_BOLTS = 400
+
+const EVENT_ABORT_WAITING = "abort-waiting"
 
 
 // determine what this is running on and work out the
 // port from URL if specified otherwise use default
 const PORT = new URLSearchParams(window.location.search).get("port") || (isElectron() ? 1337 : 5555)
-
-const EVENT_ABORT_WAITING = "abort-waiting"
 
 const isSlave = new URLSearchParams(window.location.search).has("slave") || false
 
@@ -276,7 +276,6 @@ const pauseUntilBoltSelectedOrTimeout = async ( timeOut=TIME_BETWEEN_BOLTS ) => 
   // we could await this but want is async
   // const arduinoState = this.arduino.waitForUserToSelectBolt()
   automaticSelectionInterval = setTimeout( ()=>{ 
-
     const nextUnplayedBolt = game.getRandomBoltIndexWithNoSelection()
     activateBolt( nextUnplayedBolt )
   }, timeOut )

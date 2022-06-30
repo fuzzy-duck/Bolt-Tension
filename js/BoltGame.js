@@ -141,7 +141,7 @@ export default class BoltGame extends EventManager {
                 // now watch for when a user interacts with a bolt
                 this.arduino.on(EVENT_BOLT_SELECTED, boltIndex => this.onArduinoBoltSelected(boltIndex) )
             
-                console.log("Listening to Arduino!", this.arduino, {arduinoState})
+                console.log("Listening to Arduino!", this.arduino)
 
                 // test sending bolt number to all browsers
                 // sendDataToServer(202)
