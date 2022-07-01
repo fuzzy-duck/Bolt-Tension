@@ -1,9 +1,8 @@
 import {isElectron} from './platform.js'
+import * as Settings from './settings.js'
 import BoltGame, {
   EVENT_BOLT_ACTIVATED, EVENT_ALL_BOLTS_COMPLETED, EVENT_GAME_COMPLETED, EVENT_BOLT_EVALUATED
 } from './BoltGame.js'
-// import gsap from "./gsap.min.js"
-// "../node_modules/gsap/all"
 
 import BoltManager, {
   EVENT_BOLT_SELECTED,
@@ -12,7 +11,6 @@ import BoltManager, {
   LED_STATE_WHITE,
   LED_STATE_GREEN,
   LED_STATE_RED,
-  LED_STATE_OFF
 } from './BoltManager.js'
 
 import {
@@ -22,9 +20,7 @@ import {
 
 // Settings!
 const TIME_BETWEEN_BOLTS = 400
-
 const EVENT_ABORT_WAITING = "abort-waiting"
-
 
 // determine what this is running on and work out the
 // port from URL if specified otherwise use default
@@ -52,7 +48,7 @@ const startScreens = [ $(".htp01"), $(".htp02"), $(".htp03"), $(".htp04") ]
 const video = document.querySelector("video.bolt-fault-check-video")
 const source = video.querySelector("source")
 
-
+// FIXME: This is janky
 const fadeOut = (element) => {
   element.classList.toggle('fade-out', true)
 }
@@ -278,10 +274,13 @@ const waitForUserChoice = async( signal, timeAllowance=( 1 * 60 * 1000 )) => new
 const pauseUntilBoltSelectedOrTimeout = async ( timeOut=TIME_BETWEEN_BOLTS ) => {
   // we could await this but want is async
   // const arduinoState = this.arduino.waitForUserToSelectBolt()
-  automaticSelectionInterval = setTimeout( ()=>{ 
-    const nextUnplayedBolt = game.getRandomBoltIndexWithNoSelection()
-    activateBolt( nextUnplayedBolt )
-  }, timeOut )
+ 
+  // automaticSelectionInterval = setTimeout( ()=>{ 
+  //   const nextUnplayedBolt = game.getRandomBoltIndexWithNoSelection()
+  //   activateBolt( nextUnplayedBolt )
+  // }, timeOut )
+
+  await game.monitorForBolts()
 }
 
 const activateBolt = async ( boltIndex ) => {
@@ -444,7 +443,7 @@ const startGame = async ( copyMode=false ) => {
   // Ensure we always start on the HomePage
   hideHelpScreens()
 
-  if (!copyMode)
+  if (Settings.ALLOW_ONSCREEN_BOLTS_TO_SELECT && !copyMode)
   {
     // game.monitorBolts()
     $(".bolt").on("click", function (event) {
@@ -477,7 +476,17 @@ const startGame = async ( copyMode=false ) => {
 // Start here ----- 
 
 // game play interactions
-$(".btn-check").on("mousedown", showResults ).on("mouseup", hideResults )
+// FIXME: Use dod 
+$(".btn-check").on("mousedown", ()=>{
+
+  showResults()
+  const undoShowResults = () =>{
+    hideResults()
+    document.removeEventListener("mouseup", undoShowResults )
+  }
+  document.addEventListener("mouseup", undoShowResults, true )
+ } )
+
 
 // Watch for the user bringing the wand to a select a bolt
 game.on( EVENT_BOLT_ACTIVATED, (boltIndex) => {
@@ -505,12 +514,6 @@ game.on( EVENT_GAME_COMPLETED, ({timeElapsed}) => {
   showWellDoneScreen()
 })
 
-window.addEventListener('keydown', event => {
-  if (game.playing && isNumber(event.key))
-  {
-    activateBolt( parseInt(event.key) - 1 )
-  }
-})
 
 // Ensure we always start on the HomePage
 hideHelpScreens()
@@ -549,22 +552,30 @@ if ( new URLSearchParams(window.location.search).has("test") )
   const buttons = tests.querySelectorAll("button")
 
   // before any button ensure we are connected to arduino!
-  
   buttons.forEach( button => 
-  button.addEventListener("click", async (event) => {
-    const command =  button.getAttribute("data-command")
-    const args = (button.getAttribute("data-arguments") || '').split(", ").filter( a => a.length > 0 )
-    const method = game[command]
-    if ( !game.initialised || !game.isArduinoConnected() )
-    {
-      console.log("Arduino is *not* connected yet - please inititalise connection first" )
-    }else{
-      console.log("TEST Arduino Command",{command,args})
-      await method.apply(game,args)
+    button.addEventListener("click", async (event) => {
+      const command =  button.getAttribute("data-command")
+      const args = (button.getAttribute("data-arguments") || '').split(", ").filter( a => a.length > 0 )
+      const method = game[command]
+      if ( !game.initialised || !game.isArduinoConnected() )
+      {
+        alert("Arduino is *not* connected yet - please inititalise connection first" )
+      }else{
+        console.log("TEST Arduino Command",{command,args})
+        await method.apply(game,args)
+      }
+      // await game.showAttractMode()
+      // await game.turnOffAllLEDs()
+      // await game.illuminateLED( boltIndex, LED_STATE_FLASHING )
     }
-    // await game.showAttractMode()
-    // await game.turnOffAllLEDs()
-    // await game.illuminateLED( boltIndex, LED_STATE_FLASHING )
-  }))
+  ))
   tests.removeAttribute("hidden")
+    
+  // Allow the keyboard to select them
+  window.addEventListener('keydown', event => {
+    if (game.playing && isNumber(event.key))
+    {
+      activateBolt( parseInt(event.key) - 1 )
+    }
+  })
 }

@@ -2,9 +2,13 @@ class LineBreakTransformer {
     // A container for holding stream data until a new line.
     constructor() {
         this.chunks = "";
+        console.log("LineTransformer");
+           
     }
   
     transform(chunk, controller) {
+        console.log("transform", {chunk, controller} );
+           
         // Append new chunks to existing chunks.
         this.chunks += chunk;
         // For each line breaks in chunks, send the parsed lines out.
@@ -12,7 +16,7 @@ class LineBreakTransformer {
         // kill empty line
         this.chunks = lines.pop();
         lines.forEach((line, i) =>{ 
-            // console.log(i, "Adding chunk", chunk, "->", line );
+            console.log(i, "Adding chunk", chunk, "->", line );
             controller.enqueue(line)
         });
     }
@@ -34,6 +38,7 @@ class LineBreakTransformer {
  */
 export default class SerialController {
     
+    isOpen = false
     isReading = false
     isWriting = false
     isContinuouslyReading = false
@@ -43,13 +48,24 @@ export default class SerialController {
     }
 
     get isConnected(){
-        return this.port && ( this.port.readable ||  this.port.writable )
+        // this.port?.readable
+        return !!(this.port && ( this.port.readable ||  this.port.writable )) 
+    }
+    get isReadable(){
+        return !!this.port?.readable
     }
 
-    constructor() {
+    /**
+     * Speak with the Serial port
+     * @param {*} useTextDecoder If you can't manage to get the data to read - set this to true
+     */
+    constructor( useTextDecoder=false ) {
         this.encoder = new TextEncoder()
         this.decoder = new TextDecoder()
-        this.textDecoder = new TextDecoderStream()
+        if (useTextDecoder)
+        {
+            this.textDecoder = new TextDecoderStream()
+        }
     } 
   
     async init() {
@@ -78,19 +94,24 @@ export default class SerialController {
                     // flowControl:none (either "none" or "hardware").
                  });
                  
-                //const [appPort, devPort] = port.readable.tee();
-                const signals = await port.getSignals();        
-                const readableStreamClosed = port.readable.pipeTo(this.textDecoder.writable)
-                this.reader = this.textDecoder.readable
-                                .pipeThrough(new TransformStream(new LineBreakTransformer()))
-                                .getReader()
-                //this.reader = port.readable.getReader()
+                //const [appPort, devPort] = port.readable.tee()
+                const signals = await port.getSignals()    
+
+                //const readableStreamClosed = port.readable.pipeTo(this.textDecoder.writable)
+               if (this.textDecoder)
+               {
+
+               }
+                this.reader = this.textDecoder ? 
+                                this.textDecoder.readable
+                                    .pipeThrough(new TransformStream(new LineBreakTransformer()))
+                                    .getReader() : 
+                            port.readable.getReader()
 
                 this.writer = port.writable.getWriter()
                 this.port = port
-
+                this.open = !!port?.readable
                 
-
                 // these are useful to connect to if multiple devices are connected
                 // as you can target them directly by id on refresh :)
                 const { usbProductId, usbVendorId } = port.getInfo()
@@ -116,7 +137,7 @@ export default class SerialController {
 
     // once reading has completed, you will want to release the read lock
     unlock(){
-        console.error("SERIAL port Unlocked")
+        console.log("SERIAL port Unlocked", this.reader)
         this.reader.releaseLock()
         this.isReading = false
     }
@@ -126,10 +147,19 @@ export default class SerialController {
             return
             //throw Error("The SerialController is not available")
         }
+
+        if (this.isReading)
+        {
+            // may be neccessary???
+            //this.unlock()
+            console.error("Tried to write to Serial but serial port is busy being read")
+        }else{
+            
+        }
+
         this.isWriting = true
         const dataArrayBuffer = this.encoder.encode(data)
         const output = await this.writer.write(dataArrayBuffer)
-        console.log("Serial WRITE : ", data )
         this.onWritingCompleted()
         return output
     }
@@ -155,7 +185,6 @@ export default class SerialController {
         // commence reading
         if (!this.isReading)
         {
-            console.log("Attempting to monitor Serial bus reads")
             this.readCommands( this.continuousCallback )
         }else{
             console.log("Tried to read Serial but serial port is busy reading")
@@ -181,6 +210,7 @@ export default class SerialController {
             return
         }
 
+        let times = 0
         const commands = []
         let cancelling = false
         
@@ -196,22 +226,25 @@ export default class SerialController {
             cancelling = true
         })
 
-        console.log("Serial readCommands", this.port.readable, this.port, {cancelling, aborted:signal.aborted} )
+        // console.log("Serial readCommands readable:", this.port.readable, {port:this.port, cancelling, aborted:signal.aborted, loop:this.port.readable && !signal.aborted && !cancelling} )
 
         // pause the whole operation until the port is readable
-        while ( this.port.readable && !signal.aborted && !cancelling ) {
+        while ( this.open && this.port.readable && !signal.aborted && !cancelling ) {
             
-            
+           const reader = this.reader
+
+            // console.log("Serial read loop, reader", {reader}, !signal.aborted && !cancelling )
+                        
             try {
                 // pause the operation again until the "done" signal is received
                 // this may take many loops but eventually the arduino will proclaim
                 // the the next byte will be the last byte of the data and it will be "done"
                 while (!signal.aborted && !cancelling) {
-
-                    const { value, done } = await this.reader.read()
+                    
+                    const { value, done } = await reader.read()
                     
                     if (done) {
-                        console.log("Cancelled Serial read completed (arduino sent complete bit)")
+                        //console.log("Cancelled Serial read completed (arduino sent complete bit)")
                         this.unlock()
                         // exit these loops
                         break
@@ -220,14 +253,22 @@ export default class SerialController {
                     // concantenate the data into one longer string
                     if (value) 
                     {
-                        console.log("Serial RECEIVED COMMAND : ", value )
-        
-                        commands.push( value )
-                 
+                        let result = value
+                    
+                        // only decode if no text-decoder
+                        if (!this.textDecoder)
+                        {
+                            const decoded = this.decoder.decode(value)
+                            result = decoded.split("\r\n")[0]
+                        }
+                       
+                        commands.push( result )
+                       // console.log("Serial RECEIVED COMMAND : ", value )
+                            
                         // send only last packet
-                        callback && callback(value)
+                        callback && callback(result)
                     }else{
-                        console.log("Serial RECEIVED EMPTINESS : ", value )
+                        //console.log("Serial RECEIVED EMPTINESS : ", value )
                     }
                 }
 
@@ -247,7 +288,8 @@ export default class SerialController {
             }
         }
 
-        if (cancelling){
+        if (cancelling)
+        {
             console.log("Cancelled Serial reading!")
             this.unlock()
         }
@@ -257,6 +299,7 @@ export default class SerialController {
     onWritingCompleted(){
         
         this.isWriting = false
+
         if (this.isContinuouslyReading)
         {
             console.log("Serial WRITE complete - now remonitoring read...",  {isReading:this.isReading} )

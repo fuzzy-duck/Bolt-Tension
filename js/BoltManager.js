@@ -38,29 +38,23 @@ export default class BoltManager extends EventManager {
     // the system sends out this event when the bolt has been selected
     arduinoBoltSelected = -1
 
-    internalRandomBolt = Math.ceil(Math.random() * 8)
+    internalRandomBolt
 
-   
     howManyBoltsActivated = 0
 
      // when this hits 8 we go into mode 2
     howManyBoltsAreNotFaulty = 0
 
-    // game Mode 2
-
-
-
     // LEDS = x8 lights (on / off)
     leds
 
-    //
     connected = false
     connecting = false
 
     constructor( ledQuantity=8 ) {
         super()
         this.serialController = new SerialController()
-      
+        this.internalRandomBolt = Math.ceil(Math.random() * ledQuantity)
         // assume this is all turned off until we know otherwise
         this.leds = new Array(ledQuantity).fill(LED_STATE_UNKNOWN)
     }
@@ -185,27 +179,53 @@ export default class BoltManager extends EventManager {
      */
     parseCommand( command ){
 
-        const commands = command.split(" ") 
-      
-        // grab first part
-        const commandType = String(commands.shift()).toUpperCase()
-
-        // ensure that the command type is valid too
-        switch(commandType){
-            // Set the ACTIVE BOLT
-            case 'B':
-                const newBoltValue = parseInt( commands[0] )
-                if ( newBoltValue !== this.arduinoBoltSelected )
-                {
-                    this.arduinoBoltSelected = newBoltValue
-                    this.dispatch( EVENT_BOLT_SELECTED, newBoltValue )
-                }
-                break
-
-            default:
-                console.warn("Malformed arduino command:", command)
-                return null
+        const dispatchIfChanged = (newBoltValue) => {
+            if ( newBoltValue !== this.arduinoBoltSelected )
+            {
+                this.arduinoBoltSelected = newBoltValue
+                console.warn(`DISPATCHING: "${newBoltValue}"`)
+                this.dispatch( EVENT_BOLT_SELECTED, newBoltValue )
+            }
         }
+
+        // scrape numbers
+        const asNumber = parseInt(command)
+       
+        // occasssionally the serial port gets confused and mashes up the 
+        // reading so we may have to do a bit ofdetective work here...
+        if ( !isNaN( asNumber ) ){
+
+            //console.warn(`Malformed arduino assuming NUMBER: "${command}" as number "${asNumber}"`)
+                   
+            dispatchIfChanged( parseInt( command ) )
+
+        }else{
+
+            const commands = command.split(" ") 
+        
+            // grab first part
+            const commandType = String(commands.shift()).toUpperCase()
+            const value = parseInt( commands.pop() )
+
+            if (isNaN(value)){
+                //console.warn("value missing from message", {command, commands, value})
+                return null
+            }
+
+            // ensure that the command type is valid too
+            switch(commandType){
+                // Set the ACTIVE BOLT
+                case 'B':
+                    //console.warn(`COMMAND arduino command "${command}" type "${commandType}" value "${value}"`)
+                    dispatchIfChanged( value )
+                    break
+
+                default:
+                    console.warn(`Malformed arduino command: "${command}"`)
+                    return null
+            }
+        }
+
         // ensure it is valid or return failure
         return command
     }
@@ -299,23 +319,24 @@ export default class BoltManager extends EventManager {
      * @param {Function} callback - callback to run on data
      * @returns 
      */
-    // async fetchData( requestedCommand, callback ){
+    async fetchData( requestedCommand, callback ){
 
-    //     if (requestedCommand)
-    //     {
-    //         await this.sendData(requestedCommand)
-    //     }
+        console.warn(`Serial:Fetching Data`,requestedCommand )
+        if (requestedCommand)
+        {
+            await this.sendData(requestedCommand)
+        }
         
-    //     // returns a long string of data but it may be cut off
-    //     const data = await this.serialController.readCommands( (commandData)=>{
-    //         const command = this.parseCommand(commandData)
-    //         command && callback && callback(command)
-    //     })
+        // returns a long string of data but it may be cut off
+        const data = await this.serialController.readCommands( (commandData)=>{
+            const command = this.parseCommand(commandData)
+            command && callback && callback(command)
+        })
 
-    //     this.parseData(data)
-    //     // update state...
-    //     return this.createSnapshot()
-    // }
+        this.parseData(data)
+        // update state...
+        return this.createSnapshot()
+    }
 
     /**
      * NB. This halts all reads until it completes

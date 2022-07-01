@@ -254,7 +254,7 @@ export default class BoltGame extends EventManager {
         // turn all LEDs off
         await this.arduino.resetLEDs()
         // stop watching for serial reads
-        this.arduino.stopMonitoringBolts()    
+        // this.arduino.stopMonitoringBolts()    
         return true 
     }
 
@@ -267,8 +267,16 @@ export default class BoltGame extends EventManager {
         sendGameStateToServer(this.gameState, this.activeBolt)
         
         this.turnOffAllLEDs()
+    }
+
+    async monitorForBolts(){
+        console.log("Monitoring for BOLT changes" )
         // start watching for serial reads
-        this.arduino.monitorBolts()    
+        // this.arduino.monitorBolts()    
+        const state = this.arduino.fetchData( false, command => {
+            console.log("state", {state, command} )
+            return command
+        })
     }
 
     /**
