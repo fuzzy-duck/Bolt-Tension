@@ -162,6 +162,10 @@ export default class BoltGame extends EventManager {
         return connectionEstablished
     }
 
+    /**
+     * Check to see if the arduino has been connected
+     * @returns {Boolean} true if arduino is connected via webserial
+     */
     isArduinoConnected(){
         return this.arduino.connected
     }
@@ -223,7 +227,7 @@ export default class BoltGame extends EventManager {
     }
 
      /**
-     * 
+     * Pass in a bolt and this method will tell you if it is faulty
      * @param {Number} boltIndex - bolt position
      * @returns {Boolean} return if bolt at index is faulty
      */
@@ -269,16 +273,21 @@ export default class BoltGame extends EventManager {
         this.turnOffAllLEDs()
     }
 
-
+    /**
+     * Watch for any serial data incoming
+     * @returns 
+     */
     async monitorForBolts(){
+
         if (this.monitoring)
         {
             console.error("Request filed to MONITOR - but already monitoring!" )
-            return
+            return true
         }else{
             console.log("Request filed to MONITOR BOLT changes..." )
             this.monitoring = true
         }
+
         // start watching for serial reads
         // this.arduino.monitorBolts()    
         const state = this.arduino.fetchData( false, command => {
@@ -361,7 +370,6 @@ export default class BoltGame extends EventManager {
         console.groupEnd()
         return wasUserCorrect
     }
-
     
     /**
      * Set the game state to an initial reset status
