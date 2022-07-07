@@ -269,10 +269,16 @@ export default class BoltGame extends EventManager {
         this.turnOffAllLEDs()
     }
 
-    async monitorForBolts(){
-        
-        console.log("Request filed to MONITOR BOLT changes..." )
 
+    async monitorForBolts(){
+        if (this.monitoring)
+        {
+            console.error("Request filed to MONITOR - but already monitoring!" )
+            return
+        }else{
+            console.log("Request filed to MONITOR BOLT changes..." )
+            this.monitoring = true
+        }
         // start watching for serial reads
         // this.arduino.monitorBolts()    
         const state = this.arduino.fetchData( false, command => {
