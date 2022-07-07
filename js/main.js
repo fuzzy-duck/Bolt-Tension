@@ -458,10 +458,13 @@ const startGame = async ( copyMode=false ) => {
   if (!copyMode && automaticallyShowFirstBolt)
   {
     console.log("Picking random bolt selections due to setting automaticallyShowFirstBolt=true")
-    // go into fake mode...
-    pickRandomBolt()
+    // go into auto bolt selection mode
+    await pickRandomBolt()
   }
   
+  // and allow the user to change the selection
+  await pauseUntilBoltSelectedOrTimeout()
+
   if (copyMode)
   {
     console.log( "Copycat mode",  new Date(timeStarted), `on port ${PORT}`)

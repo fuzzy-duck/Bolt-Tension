@@ -50,6 +50,7 @@ export default class BoltManager extends EventManager {
 
     connected = false
     connecting = false
+    monitoringSerial = false
 
     constructor( ledQuantity=8 ) {
         super()
@@ -305,7 +306,9 @@ export default class BoltManager extends EventManager {
      * @returns 
      */
     async sendData(requestedCommand){
+        
         try{
+            this.monitoringSerial = false
             return this.serialController.write(`${requestedCommand}\n`)
         }catch(error){
             console.warn(error)
@@ -321,7 +324,14 @@ export default class BoltManager extends EventManager {
      */
     async fetchData( requestedCommand, callback ){
 
-        console.warn(`Serial:Fetching Data`,requestedCommand )
+        if (this.monitoringSerial)
+        {
+            console.warn(`Serial:Fetch Data REQUEST - already polling`,requestedCommand )
+        }else{
+            console.warn(`Serial:Fetching Data`,requestedCommand )
+            this.monitoringSerial = true
+        }
+        
         if (requestedCommand)
         {
             await this.sendData(requestedCommand)
