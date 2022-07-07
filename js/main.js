@@ -220,9 +220,23 @@ const setVideo = ( isFaulty=false ) => {
   const videoSource = isFaulty ?  getFaultyVideo() : getWorkingVideo()
   source.setAttribute( "src", "videos/" + videoSource)
   //source.setAttribute( "data-faulty", isFaulty)
-  video.load()
-  video.removeAttribute("hidden")
-  video.play()
+  try{
+
+  //   video.addEventListener('loadeddata', function() {
+  //    
+  //  }, false)
+    video.onloadeddata = () => {
+      video.play()
+    }
+    video.load()
+    video.removeAttribute("hidden")
+    
+
+  }catch(error){
+
+    console.warn("Video playback was interupted by load", error)
+  }
+ 
   return videoSource
 }
 
@@ -382,7 +396,7 @@ const activateBolt = async ( boltIndex ) => {
       // After pressing faulty or normal another bolt
       // is randomised and the process continues that is 
       // UNLESS the user hasn't interacted with the arduino
-      await pauseUntilBoltSelectedOrTimeout()
+      // await pauseUntilBoltSelectedOrTimeout()
     }else{
       // WHAT TO DO HERE! 
       console.log("Answers collected!", game.areAllAnswersCorrect() ? " - all bolts correctly labelled!" : "some bolts are wrong!\nUse the check button to see which ones" )
@@ -454,6 +468,9 @@ const startGame = async ( copyMode=false ) => {
 
   game.startGame()
 
+  // allow user to connect to the bolts via magnet
+  await pauseUntilBoltSelectedOrTimeout()
+
   // auto mode
   if (!copyMode && automaticallyShowFirstBolt)
   {
@@ -462,9 +479,6 @@ const startGame = async ( copyMode=false ) => {
     await pickRandomBolt()
   }
   
-  // and allow the user to change the selection
-  await pauseUntilBoltSelectedOrTimeout()
-
   if (copyMode)
   {
     console.log( "Copycat mode",  new Date(timeStarted), `on port ${PORT}`)
