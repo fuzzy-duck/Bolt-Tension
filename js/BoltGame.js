@@ -270,7 +270,9 @@ export default class BoltGame extends EventManager {
     }
 
     async monitorForBolts(){
-        console.log("Monitoring for BOLT changes" )
+        
+        console.log("Request filed to MONITOR BOLT changes..." )
+
         // start watching for serial reads
         // this.arduino.monitorBolts()    
         const state = this.arduino.fetchData( false, command => {
@@ -379,15 +381,16 @@ export default class BoltGame extends EventManager {
      * @returns 
      */
     async showAttractMode () {
-        return await this.arduino.setAttractMode()
+        return this.isMaster ? await this.arduino.setAttractMode() : false
     }
 
     /**
-     *
+     * Dispatches an event when a user selects a bolt
      */
     async waitForUserToSelectBolt () {
        return this.isMaster ? await this.arduino.waitForUserToSelectBolt() : false
     }
+
     /**
      * Send a signal to the Arduino to turn off ALL LEDs
      * @returns delayed response
@@ -408,7 +411,6 @@ export default class BoltGame extends EventManager {
 
     async onArduinoBoltSelected(boltIndex){
     
-        console.log("BOLT SELECTED via Arduino", boltIndex )
         // user has selected a bolt!
         // boltIndex or arduino.getActiveBolt() at any time
         //  const boltUserIsEngagedWith = this.arduino.getActiveBolt()
@@ -419,13 +421,14 @@ export default class BoltGame extends EventManager {
         sendDataToServer( `serial/${boltIndex}` )
 
         // set the LED to white or flashing?
-        // This get's called by boltActivated in main
+        // This now gets called by boltActivated in main
         // await arduino.illuminateLED( boltIndex, LED_STATE_FLASHING )
 
-        // FIXME: A user has selected a bolt -> dispatch to game?
+        console.log("BOLT SELECTED via Arduino", boltIndex )
         this.dispatch( EVENT_BOLT_ACTIVATED, boltIndex )
     }
 
+    // WebSockets data
     onExternalData(data){
 
         // we don't care about information from ourselves
@@ -437,8 +440,7 @@ export default class BoltGame extends EventManager {
         // check if string...
         // they are all strings!
         const isObject = data.charAt(0) === "{" || data.charAt(0) === "["
-        const isString = typeof data === 'string' || data instanceof String
-
+       
         if (!isObject)
         {
             const commands = data.split(" ")
