@@ -36,6 +36,7 @@ let automaticallyShowFirstBolt = true
 let waiting = false
 let userChoiceInterval = -1
 let controller = new AbortController()
+
 const game = new BoltGame( PORT, isSlave )
 
 const $home = $(".home")
@@ -243,7 +244,7 @@ const setVideo = ( isFaulty=false ) => {
 /**
  * Wait for a user to press either Faulty or Normal (or cancel - reject)
  */
-const waitForUserChoice = async( signal, timeAllowance=( 1 * 60 * 1000 )) => new Promise( (resolve,reject)=>{
+const waitForUserChoice = async( signal, timeAllowance=60000) => new Promise( (resolve,reject)=>{
 
   const cleanUp = () => {
     $(".btn-normal").unbind("click")
@@ -372,7 +373,7 @@ const activateBolt = async ( boltIndex ) => {
   try{
 
     // wait for user to select an answer
-    const userThinksItIsFaulty = await waitForUserChoice( controller.signal )
+    const userThinksItIsFaulty = await waitForUserChoice( controller.signal, Settings.TIME_DURATION_BEFORE_WE_CONSIDER_USER_LEFT )
     
     // now check the answer is correct
     const wasUserCorrect = await game.setUserAnswer(boltIndex, userThinksItIsFaulty)
