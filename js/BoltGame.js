@@ -267,7 +267,7 @@ export default class BoltGame extends EventManager {
     /**
      * Start the game!
      */
-    startGame(){
+    async startGame(){
         this.playing = true
         this.timeStarted = Date.now()
         sendGameStateToServer(this.gameState, this.activeBolt)
