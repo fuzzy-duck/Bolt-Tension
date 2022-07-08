@@ -98,10 +98,6 @@ export default class SerialController {
                 const signals = await port.getSignals()    
 
                 //const readableStreamClosed = port.readable.pipeTo(this.textDecoder.writable)
-               if (this.textDecoder)
-               {
-
-               }
                 this.reader = this.textDecoder ? 
                                 this.textDecoder.readable
                                     .pipeThrough(new TransformStream(new LineBreakTransformer()))

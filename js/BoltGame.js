@@ -253,12 +253,14 @@ export default class BoltGame extends EventManager {
      * @returns 
      */
     async resetGame () {
+        
         // reset and randomise
         this.gameState = this.createGameState()
-        // turn all LEDs off
-        await this.arduino.resetLEDs()
-        // stop watching for serial reads
-        // this.arduino.stopMonitoringBolts()    
+        this.endGame()
+        
+        // TODO: send out reset to server?
+        // sendGameStateToServer(this.gameState, this.activeBolt)
+
         return true 
     }
 
@@ -269,8 +271,16 @@ export default class BoltGame extends EventManager {
         this.playing = true
         this.timeStarted = Date.now()
         sendGameStateToServer(this.gameState, this.activeBolt)
-        
-        this.turnOffAllLEDs()
+        await this.turnOffAllLEDs()
+    }
+    
+
+    async endGame(){
+        this.playing = false
+        // turn all LEDs off
+        await this.turnOffAllLEDs()
+        // stop watching for serial reads
+        // this.arduino.stopMonitoringBolts()   
     }
 
     /**
