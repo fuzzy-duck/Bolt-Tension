@@ -18,8 +18,6 @@ import {
   getFaultyVideo
 } from './videos.js'
 
-// Settings!
-const TIME_BETWEEN_BOLTS = 400
 const EVENT_ABORT_WAITING = "abort-waiting"
 
 // determine what this is running on and work out the
@@ -286,14 +284,11 @@ const waitForUserChoice = async( signal, timeAllowance=60000) => new Promise( (r
 })
  
 
-const pauseUntilBoltSelectedOrTimeout = async ( timeOut=TIME_BETWEEN_BOLTS ) => {
+const pauseUntilBoltSelectedOrTimeout = async ( timeOut=Settings.TIME_BETWEEN_BOLTS ) => {
+  
   // we could await this but want is async
   // const arduinoState = this.arduino.waitForUserToSelectBolt()
  
-  // automaticSelectionInterval = setTimeout( ()=>{ 
-  //   const nextUnplayedBolt = game.getRandomBoltIndexWithNoSelection()
-  //   activateBolt( nextUnplayedBolt )
-  // }, timeOut )
 
   await game.monitorForBolts()
 }
@@ -398,6 +393,15 @@ const activateBolt = async ( boltIndex ) => {
       // is randomised and the process continues that is 
       // UNLESS the user hasn't interacted with the arduino
       // await pauseUntilBoltSelectedOrTimeout()
+
+      if (Settings.AUTOMATICALLY_SELECT_NEXT_BOLT)
+      {
+        automaticSelectionInterval = setTimeout( ()=>{ 
+          const nextUnplayedBolt = game.getRandomBoltIndexWithNoSelection()
+          activateBolt( nextUnplayedBolt )
+        }, Settings.TIME_BETWEEN_BOLTS )
+      }
+     
     }else{
       // WHAT TO DO HERE! 
       console.log("Answers collected!", game.areAllAnswersCorrect() ? " - all bolts correctly labelled!" : "some bolts are wrong!\nUse the check button to see which ones" )

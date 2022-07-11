@@ -1,2 +1,6 @@
+
+// Settings!
+export const TIME_BETWEEN_BOLTS = 400
 export const ALLOW_ONSCREEN_BOLTS_TO_SELECT = false
 export const TIME_DURATION_BEFORE_WE_CONSIDER_USER_LEFT = 1 * 60 * 1000 
+export const AUTOMATICALLY_SELECT_NEXT_BOLT = true
