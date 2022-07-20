@@ -504,16 +504,16 @@ const startGame = async ( copyMode=false ) => {
 
 // game play interactions
 // FIXME: Use dod 
-$(".btn-check").on("mousedown", ()=>{
+$(".btn-check").on("mousedown touchstart", ()=>{
   $(".btn-check").css("fill", "#DDA842");
 
   showResults()
   const undoShowResults = () =>{
     hideResults()
-    document.removeEventListener("mouseup", undoShowResults )
+    document.removeEventListener("mouseup touchend", undoShowResults )
     $(".btn-check").css("fill", "#6DB6AF");
   }
-  document.addEventListener("mouseup", undoShowResults, true )
+  document.addEventListener("mouseup touchend", undoShowResults, true )
  } )
 
 
