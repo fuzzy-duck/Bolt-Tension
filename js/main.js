@@ -52,6 +52,28 @@ $(".btn-home,.btn-htp").on("click", function (event) {
   location.reload();
 })
 
+$(".start").on("click", function (event) {
+  $(".btn-normal,.btn-faulty").fadeIn();
+})
+
+//Sebs tactile button presses (sorry for the repeat code!)
+$(".btn-normal").on("click", function (event) {
+  $(".btn-normal").css("background-image", "url(../img/btn-normal-down.svg");
+
+  function getback() {
+    $(".btn-normal").css("background-image", "url(../img/btn-normal-default.svg");
+   }
+   setTimeout(getback, 300);
+})
+$(".btn-faulty").on("click", function (event) {
+  $(".btn-faulty").css("background-image", "url(../img/btn-faulty-down.svg");
+
+  function getback() {
+    $(".btn-faulty").css("background-image", "url(../img/btn-faulty-default.svg");
+   }
+   setTimeout(getback, 300);
+})
+
 // FIXME: This is janky
 const fadeOut = (element) => {
   element.classList.toggle('fade-out', true)
@@ -250,8 +272,8 @@ const setVideo = ( isFaulty=false ) => {
 const waitForUserChoice = async( signal, timeAllowance=60000) => new Promise( (resolve,reject)=>{
 
   const cleanUp = () => {
-    $(".btn-normal").unbind("click")
-    $(".btn-faulty").unbind("click")
+    //$(".btn-normal").unbind("click")
+    //$(".btn-faulty").unbind("click")
     clearInterval(userChoiceInterval)
   }
 
@@ -504,16 +526,16 @@ const startGame = async ( copyMode=false ) => {
 
 // game play interactions
 // FIXME: Use dod 
-$(".btn-check").on("mousedown touchstart", ()=>{
+$(".btn-check").on("mousedown", ()=>{
   $(".btn-check").css("fill", "#DDA842");
 
   showResults()
   const undoShowResults = () =>{
     hideResults()
-    document.removeEventListener("mouseup touchend", undoShowResults )
+    document.removeEventListener("mouseup", undoShowResults )
     $(".btn-check").css("fill", "#6DB6AF");
   }
-  document.addEventListener("mouseup touchend", undoShowResults, true )
+  document.addEventListener("mouseup", undoShowResults, true )
  } )
 
 

@@ -248,6 +248,33 @@ pointer-events: none;
     top: 129px;
     left: 202px;
 }
+
+
+.btn-normal {
+    width: 359px;
+    height: 401px;
+    background-image: url(../img/btn-normal-default.svg);
+    background-repeat: no-repeat;
+    background-position: bottom center;
+    background-size: 359px;
+    position: absolute;
+    z-index: 999;
+    top: 147px;
+    left: 1492px;
+}
+.btn-faulty {
+    width: 359px;
+    height: 401px;
+    background-image: url(../img/btn-faulty-default.svg);
+    background-repeat: no-repeat;
+    background-position: bottom center;
+    background-size: 359px;
+    position: absolute;
+    z-index: 999;
+    top: 596px;
+    left: 1492px;
+}
+
 .well-done {
 width: 1920px;
 height: 1080px;
