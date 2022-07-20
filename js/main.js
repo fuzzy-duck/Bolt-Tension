@@ -42,10 +42,15 @@ const $play = $(".play")
 const $start = $(".start")
 const $wellDone = $(".well-done")
 
-const nextButtons = [ $(".next01"), $(".next02"), $(".next03"), $start ]
-const startScreens = [ $(".htp01"), $(".htp02"), $(".htp03"), $(".htp04") ]
+const nextButtons = [ $(".next01"), $(".next02"), $start ]
+const startScreens = [ $(".htp01"), $(".htp02"), $(".htp03") ]
 const video = document.querySelector("video.bolt-fault-check-video")
 const source = video.querySelector("source")
+
+
+$(".btn-home,.btn-htp").on("click", function (event) {
+  location.reload();
+})
 
 // FIXME: This is janky
 const fadeOut = (element) => {
@@ -500,11 +505,13 @@ const startGame = async ( copyMode=false ) => {
 // game play interactions
 // FIXME: Use dod 
 $(".btn-check").on("mousedown", ()=>{
+  $(".btn-check").css("fill", "#DDA842");
 
   showResults()
   const undoShowResults = () =>{
     hideResults()
     document.removeEventListener("mouseup", undoShowResults )
+    $(".btn-check").css("fill", "#6DB6AF");
   }
   document.addEventListener("mouseup", undoShowResults, true )
  } )

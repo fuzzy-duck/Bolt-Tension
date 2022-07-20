@@ -133,16 +133,16 @@ left: 0;
 z-index:1;
 }
 .htp01 {
-    background: url(../img/htp01.svg);
-}
-.htp02 {
     background: url(../img/htp02.svg);
 }
-.htp03 {
+.htp02 {
     background: url(../img/htp03.svg);
 }
-.htp04 {
+.htp03 {
     background: url(../img/htp04.svg);
+}
+.htp04 {
+    background: url(../img/nope.svg);
 }
 
 .next01,.next02,.next03 {
@@ -221,7 +221,9 @@ height: 50px;
 background: url(../img/cross.svg) no-repeat;
 }
 .active {
-background: url(../img/bolt-active.svg);
+background: url(../img/waveform-eq.gif);
+background-size: 82px;
+    background-repeat: no-repeat;
 }
 .normal {
 background: url(../img/bolt-normal.svg);

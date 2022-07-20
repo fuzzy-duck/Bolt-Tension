@@ -2,7 +2,7 @@
 
 
 // All the onscreeb bolt answers to also act as buttons for bolt selection
-export const ALLOW_ONSCREEN_BOLTS_TO_SELECT = false
+export const ALLOW_ONSCREEN_BOLTS_TO_SELECT = true
 
 // Time out - in ms - how long before we consider the user has left due to inactivity?
 export const TIME_DURATION_BEFORE_WE_CONSIDER_USER_LEFT = 1 * 60 * 1000 
